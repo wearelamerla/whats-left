@@ -103,23 +103,36 @@ h2.sec{font-weight:400;font-size:22px;margin:30px 0 14px;color:var(--brown-2)}
 .install .step{margin-top:12px;background:var(--surface);border-radius:12px;padding:12px 14px;line-height:1.9}
 .install .small{font-size:13px;color:var(--muted);margin-top:8px}
 .install .gi{width:20px;height:20px;vertical-align:-4px;color:#1a73e8;margin:0 2px}
-.stage{position:relative;display:flex;justify-content:center;padding:34px 0 38px;margin:14px 0 4px}
-.stage::before{content:'';position:absolute;left:0;right:34%;top:70px;bottom:0;background:var(--sand);border-radius:6px}
-.phone{position:relative;width:250px;height:512px;border-radius:44px;background:#221a13;padding:9px;transform:rotate(-4deg);
+.stage{position:relative;display:flex;justify-content:center;padding:30px 0 30px;margin:18px 0 10px}
+.stage::before{content:'';position:absolute;left:0;right:34%;top:60px;bottom:0;background:var(--sand);border-radius:6px}
+.phone{position:relative;width:214px;height:438px;border-radius:40px;background:#221a13;padding:9px;transform:rotate(-4deg);
   box-shadow:0 40px 60px -28px rgba(58,38,22,.55),0 14px 24px -12px rgba(58,38,22,.35),inset 0 0 0 1.5px #4a3a2d,inset 0 0 0 4px #17110c}
 .phone>i{position:absolute;background:#1a130d;border-radius:2px;width:3px}
-.phone>.b1{left:-3px;top:104px;height:26px}.phone>.b2{left:-3px;top:146px;height:46px}.phone>.b3{right:-3px;top:130px;height:66px}
-.screen{position:relative;height:100%;border-radius:36px;overflow:hidden;background:var(--bg)}
-.island{position:absolute;top:9px;left:50%;width:76px;height:22px;border-radius:12px;background:#0f0b08;transform:translateX(-50%);z-index:3}
-.status{position:absolute;top:0;left:0;right:0;height:40px;display:flex;justify-content:space-between;align-items:center;padding:2px 22px 0 28px;font-size:12.5px;font-weight:700;color:var(--ink);z-index:2}
-.status .sig{display:flex;gap:5px;align-items:center}.status svg{height:10px;fill:currentColor}.status svg+svg{height:11px}
-.inner{position:absolute;top:34px;left:0;width:360px;padding:0 16px;transform:scale(.6444);transform-origin:top left;pointer-events:none}
+.phone>.b1{left:-3px;top:88px;height:22px}.phone>.b2{left:-3px;top:124px;height:40px}.phone>.b3{right:-3px;top:112px;height:56px}
+.screen{position:relative;height:100%;border-radius:32px;overflow:hidden;background:var(--bg)}
+.island{position:absolute;top:8px;left:50%;width:66px;height:19px;border-radius:12px;background:#0f0b08;transform:translateX(-50%);z-index:3}
+.status{position:absolute;top:0;left:0;right:0;height:34px;display:flex;justify-content:space-between;align-items:center;padding:1px 18px 0 24px;font-size:11px;font-weight:700;color:var(--ink);z-index:2}
+.status .sig{display:flex;gap:5px;align-items:center}.status svg{height:8.5px;fill:currentColor}.status svg+svg{height:9.5px}
+.inner{position:absolute;top:30px;left:0;width:340px;height:678px;overflow:hidden;transform:scale(.5647);transform-origin:top left;pointer-events:none}
+#pv{padding:0 16px}
+.inner .hero-line{font-size:30px!important}
+.pscrim{position:absolute;inset:0;background:rgba(40,26,16,.35);opacity:0;transition:opacity .2s}
+.psheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:26px 26px 0 0;padding:10px 18px 18px;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+#pvS.open .pscrim{opacity:1}#pvS.open .psheet{transform:none}
+.psheet .head{display:flex;align-items:center;justify-content:space-between}.psheet .head div{font-weight:600}
+.psheet .display{margin:6px 0 4px}
+.pnote{display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.pnote.filled{color:var(--ink)}
+.psheet .pad .k{height:56px;border-radius:16px;background:var(--surface);border:1px solid var(--line);font-size:24px;font-weight:600;display:grid;place-items:center;transition:background .15s,transform .15s}
+.psheet .pad svg{width:24px;height:24px}
+.pressed{transform:scale(.95)!important;filter:brightness(.88)}
+.steps{text-align:center;font-family:var(--head);text-transform:uppercase;font-weight:500;font-size:19px;line-height:1.35;letter-spacing:.02em;margin:0;color:var(--ink)}
 .inner .top{height:44px}
 .inner .eyebrow{margin-top:14px}
 .inner .card{transition:none}
 .inner .amt span,.inner .amt{transition:color .3s}
 .inner .bar>i{transition:width .6s ease}
-.ptoast{position:absolute;top:50px;left:50%;transform:translateX(-50%);background:var(--ink);color:#f3ede4;padding:10px 18px;border-radius:999px;font-size:15px;white-space:nowrap;animation:pin .35s ease both}
+.ptoast{position:absolute;top:52px;left:50%;transform:translateX(-50%);background:var(--ink);color:#f3ede4;padding:10px 18px;border-radius:999px;font-size:15px;white-space:nowrap;animation:pin .35s ease both}
 @keyframes pin{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (prefers-reduced-motion: reduce){.ptoast{animation:none}}
 .why .w{display:flex;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
@@ -298,7 +311,7 @@ function render(){
   else if (view === 'backup') app.innerHTML = viewBackup();
   else app.innerHTML = viewHome();
   if (view === 'new' || view === 'edit') bindForm(view === 'edit' ? byId(id) : null);
-  clearInterval(pvTimer); startPreview();
+  pvClear(); startPreview();
   window.scrollTo(0, 0);
 }
 
@@ -361,56 +374,59 @@ function installCard(){
     <div class="it">Add to your home screen.</div>${body}</div>`;
 }
 /* ---------- landing preview ---------- */
-let pvTimer = null;
-function pvData(step){
-  const now = Date.now(), d0 = startOfDay(now), cur = S.cur || 'EUR';
-  const wk = { name:'Weekly budget', mode:'budget', amount:25000, period:'weekly', cur, start:d0 - 2*DAY, end:d0 + 5*DAY, status:'active',
-    expenses:[{amount:4230},{amount:1280}].concat(step ? [{amount:450}] : []) };
-  const xm = { name:'Christmas shopping', mode:'zero', amount:0, period:'oneoff', cur, start:d0, end:null, status:'active',
-    expenses:[{amount:8990},{amount:5410},{amount:3600}] };
-  return [wk, xm];
+let pvTimers = [];
+const pvClear = () => { pvTimers.forEach(clearTimeout); pvTimers = []; };
+function pvTracking(added){
+  const d0 = startOfDay(Date.now()), now = Date.now();
+  const ex = [{id:'g', amount:4230, note:'Groceries', t:now - 26*36e5}, {id:'l', amount:1280, note:'Lunch', t:now - 3*36e5}];
+  if (added) ex.push({id:'c', amount:450, note:'Coffee', t:now});
+  return { id:'pv', name:'Weekly budget', mode:'budget', amount:25000, period:'weekly', cur:S.cur || 'EUR',
+    start:d0 - 2*DAY, end:d0 + 5*DAY, status:'active', expenses:ex };
 }
-function pvScreen(step){
-  const [wk, xm] = pvData(step), f = fmtFor(wk);
-  return `<div class="top"><span class="spacer"></span><div class="brand">What's Left?</div><span class="iconbtn">${I.menu}</span></div>
-    <div class="eyebrow">active</div>${cardFor(wk)}${cardFor(xm)}
-    <div class="actions" style="margin-top:14px"><span class="btn block">${I.plus} new tracking</span></div>
-    <h2 class="sec">history</h2>
-    <div class="list">${histItem({ name:'Weekly budget', mode:'budget', amount:25000, cur:wk.cur, start:wk.start - 7*DAY, end:wk.start, endedAt:wk.start, status:'ended', expenses:[{amount:23760}] })}${histItem({ name:'Tallinn weekend', mode:'zero', amount:0, cur:wk.cur, start:wk.start - 20*DAY, endedAt:wk.start - 18*DAY, status:'ended', expenses:[{amount:21450}] })}</div>
-    ${step ? `<div class="ptoast">${f(450)} added · Coffee</div>` : ''}`;
+function pvScreen(added){
+  const t = pvTracking(added), f = fmtFor(t);
+  return viewTracking(t) + (added ? `<div class="ptoast">${f(450)} added</div>` : '');
+}
+function pvSheet(){
+  const C = curOf({cur:S.cur}), keys = ['1','2','3','4','5','6','7','8','9',C.dec,'0','⌫'];
+  return `<div class="pscrim"></div><div class="psheet"><div class="grab"></div>
+    <div class="head"><span class="iconbtn">${I.close}</span><div>Add expense</div><span class="spacer"></span></div>
+    <div class="display placeholder" id="pvD">${C.after ? '0 ' + C.sym : C.sym + '0'}</div>
+    <div class="note pnote" id="pvN">Optional note</div>
+    <div class="pad">${keys.map(k => `<span class="k" data-k="${k}">${k === '⌫' ? I.del : k}</span>`).join('')}</div>
+    <span class="btn block" id="pvAdd">add</span></div>`;
 }
 function previewHTML(){
   return `<div class="stage" aria-hidden="true"><div class="phone"><i class="b1"></i><i class="b2"></i><i class="b3"></i>
     <div class="screen"><div class="island"></div>
       <div class="status"><span>9:41</span><span class="sig"><svg viewBox="0 0 18 10"><rect x="0" y="6" width="3" height="4" rx=".6"/><rect x="5" y="4" width="3" height="6" rx=".6"/><rect x="10" y="2" width="3" height="8" rx=".6"/><rect x="15" y="0" width="3" height="10" rx=".6"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.6"/><rect x="23.5" y="4" width="1.8" height="4" rx=".8" opacity=".45"/></svg></span></div>
-      <div class="inner" id="pv">${pvScreen(0)}</div></div></div></div>`;
+      <div class="inner"><div id="pv">${pvScreen(0)}</div><div id="pvS"></div></div></div></div></div>`;
 }
 function startPreview(){
-  clearInterval(pvTimer); const el = $('#pv'); if (!el) return;
-  try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.innerHTML = pvScreen(1); return; } } catch(e){}
-  let step = 0;
-  pvTimer = setInterval(() => { if (!document.body.contains(el)) return clearInterval(pvTimer); step = 1 - step; el.innerHTML = pvScreen(step); }, 2600);
+  pvClear(); const el = $('#pv'), sh = $('#pvS'); if (!el) return;
+  let reduce = false; try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  if (reduce) { el.innerHTML = pvScreen(1); return; }
+  const C = curOf({cur:S.cur});
+  const at = (ms, fn) => pvTimers.push(setTimeout(() => { if (document.body.contains(el)) fn(); }, ms));
+  const press = sel => { const n = sh.querySelector(sel) || el.querySelector(sel); if (n) { n.classList.add('pressed'); setTimeout(() => n.classList.remove('pressed'), 220); } };
+  const typed = v => { const d = $('#pvD'); if (!d) return; d.classList.remove('placeholder'); d.textContent = C.after ? v + ' ' + C.sym : C.sym + v; };
+  const run = () => {
+    el.innerHTML = pvScreen(0); sh.innerHTML = '';
+    at(1100, () => press('.actions .btn'));
+    at(1400, () => { sh.innerHTML = pvSheet(); requestAnimationFrame(() => requestAnimationFrame(() => sh.classList.add('open'))); });
+    at(2100, () => { press('.k[data-k="4"]'); typed('4'); });
+    at(2500, () => { press('.k[data-k="' + C.dec + '"]'); typed('4' + C.dec); });
+    at(2900, () => { press('.k[data-k="5"]'); typed('4' + C.dec + '5'); });
+    at(3300, () => { press('.k[data-k="0"]'); typed('4' + C.dec + '50'); });
+    at(3700, () => { const n = $('#pvN'); if (n) { n.textContent = 'Coffee'; n.classList.add('filled'); } });
+    at(4300, () => press('#pvAdd'));
+    at(4550, () => { sh.classList.remove('open'); });
+    at(4800, () => { el.innerHTML = pvScreen(1); });
+    at(5100, () => { sh.innerHTML = ''; });
+    at(8200, run);
+  };
+  run();
 }
-
-/* ---------- backup reminder ---------- */
-const backupTip = () => isIOS ? 'Tip: choose <b>Save to Files</b> → <b>iCloud Drive</b>, so it isn’t only on this phone.'
-  : 'Tip: save it to Google Drive or email it to yourself, so it isn’t only on this phone.';
-function backupDue(){
-  const n = S.trackings.reduce((a,t) => a + t.expenses.length, 0);
-  if (n < 10 && !history().length) return false;
-  const now = Date.now();
-  if (S.backupSnooze && now - S.backupSnooze < 14 * DAY) return false;
-  return !S.lastBackup || now - S.lastBackup > 30 * DAY;
-}
-function backupCard(){
-  if (!backupDue()) return '';
-  return `<div class="install"><button class="x" aria-label="Remind me later" onclick="WL.snoozeBackup()">${I.close}</button>
-    <div class="it">Save a backup.</div>
-    <p class="why1">Your spending lives only on this phone. A backup keeps it safe if you lose or change phones.</p>
-    <button class="btn block" style="margin-top:14px" onclick="WL.exportData()">save a backup</button>
-    <p class="small">${backupTip()}</p></div>`;
-}
-const lastBackupText = () => S.lastBackup ? 'Last backup: ' + dfmt.format(S.lastBackup) + ' ' + new Date(S.lastBackup).getFullYear() : 'No backup yet.';
 
 function viewHome(){
   const a = active(), h = history();
@@ -420,11 +436,14 @@ function viewHome(){
     out += `<div class="eyebrow">make invisible spending visible</div>
       <div class="hero-line">Spend it.<br>See it.</div>
       <p class="sub">The easier it is to spend, the harder it is to spend mindfully.</p>
+      <div class="actions" style="margin-top:22px"><button class="btn block" onclick="location.hash='new'">start tracking</button></div>
       ${previewHTML()}
-      <div class="actions"><button class="btn block" onclick="location.hash='new'">start tracking</button></div>
-      ${installCard() ? `<div style="margin-top:18px">${installCard()}</div>` : ''}
+      <div class="eyebrow" style="text-align:center;margin:6px 0 8px">add a purchase in seconds</div>
+      <p class="steps">Set an amount.<br>Tap in what you spend.<br>Know what's left.</p>
+      ${installCard() ? `<div style="margin-top:22px">${installCard()}</div>` : ''}
       <h2 class="sec" style="margin-top:40px">why what's left?</h2>
       <div class="why">${WHY.map((w, i) => `<div class="w"><span class="no">0${i+1}</span><div><b>${w[0]}</b><p>${w[1]}</p></div></div>`).join('')}</div>
+      <div class="actions" style="margin-top:28px"><button class="btn block" onclick="location.hash='new'">start tracking</button></div>
       <div class="dash">_ _ _ _ _ _ _ _ _ _</div>`;
     return out + foot();
   }
