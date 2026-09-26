@@ -115,6 +115,10 @@ h2.sec{font-weight:400;font-size:22px;margin:30px 0 14px;color:var(--brown-2)}
 .sblock .gi{width:20px;height:20px;vertical-align:-4px;color:#1a73e8;margin:0 2px}
 .bline{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:var(--sand);border-radius:14px;padding:12px 16px;margin:6px 0 2px;color:var(--brown-2);font-size:15px}
 .bline svg{width:16px;height:16px;transform:rotate(180deg);flex:none}
+.story{background:var(--sand);border-radius:var(--r);padding:20px 20px 8px;margin-top:22px}
+.story .snum{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--brown);font-weight:700}
+.story .stitle{font-family:var(--head);font-weight:600;text-transform:uppercase;font-size:22px;margin:4px 0 10px}
+.story p{margin:0 0 12px;color:var(--brown-2)}
 .mani{margin-top:22px;font-size:18px;line-height:1.6;color:var(--ink)}
 .mani p{margin:0}
 .mdash{color:var(--muted);margin:18px 0;font-size:18px}
@@ -255,6 +259,20 @@ const installed = () => { try { return matchMedia('(display-mode: standalone)').
 const LANG = {
 en: {
   tagline:'Become aware. Be in control.',
+  waysL:'ways to use it', waysLink:'Ways to use it →', waysT:'One tool.<br>Many ways.',
+  kat:{title:'The weekly sweep', who:'Kat, founder', lines:[
+    'I deliberately make my weekly amount a little too high.',
+    "I don't want my weekly spending to feel restrictive, so I give myself more than I expect to need.",
+    "During the week, I tap in what I spend and watch what's left.",
+    'At the end of the week, whatever remains goes into my savings account. 164 € left? 164 € goes into savings. Then I start again.',
+    "Instead of feeling like I've failed every time I spend, I get a small reward every week.",
+    'After 11 weeks, I had 1 728 € in savings.']},
+  examples:[
+    ['The antique hunt', "Start with the amount you have for a buying trip. Log each piece as you buy it. No stopping at the fair to work out what's left."],
+    ['Christmas', 'Start with 600 €. Run it as a one-off until the last present is bought.'],
+    ['Just curious', 'Start at zero before going shopping. No budget at all. At the end of the day: −137,40 €.'],
+    ['The holiday', "Start with 800 € of spending money, in the local currency, and always know what's left."]],
+  waysEnd:["There isn't a What's Left method.", 'Start with an amount. Start at zero. Track a week, a month, a holiday or an afternoon.', "We're not here to tell you how to spend your money.<br>We're here to make sure you can see it."],
   manifestoL:'the idea', readIdea:'Read the idea behind What\'s Left →', settingsL:'settings &amp; backup', menuT:'Menu',
   manifesto:[
     ['Money no longer passes through your hands.', 'It slips away.', 'Card, phone, watch. A payment you barely notice.'],
@@ -326,6 +344,20 @@ en: {
 },
 fi: {
   tagline:'Huomaa. Hallitse.',
+  waysL:'käyttötapoja', waysLink:'Käyttötapoja →', waysT:'Yksi työkalu.<br>Monta tapaa.',
+  kat:{title:'Viikkosäästö', who:'Kat, perustaja', lines:[
+    'Teen viikkosummastani tarkoituksella vähän liian ison.',
+    'En halua, että viikon kulut tuntuvat rajoittavilta, joten annan itselleni enemmän kuin arvelen tarvitsevani.',
+    'Viikon aikana kirjaan ostokset ja katson, mitä jää.',
+    'Viikon lopussa kaikki jäljelle jäänyt siirtyy säästötililleni. 164 € jäljellä? 164 € säästöön. Sitten aloitan alusta.',
+    'Sen sijaan, että tuntisin epäonnistuvani aina kun kulutan, saan joka viikko pienen palkinnon.',
+    '11 viikossa säästötililleni kertyi 1 728 €.']},
+  examples:[
+    ['Antiikkiostoksilla', 'Aloita summalla, joka on varattu ostosmatkalle. Kirjaa jokainen löytö heti. Messuilla ei tarvitse laskea, paljonko on jäljellä.'],
+    ['Joulu', 'Aloita 600 eurolla. Pidä se kertaseurantana, kunnes viimeinenkin lahja on ostettu.'],
+    ['Pelkkää uteliaisuutta', 'Aloita nollasta ennen ostoksille lähtöä. Ei budjettia lainkaan. Päivän päätteeksi: −137,40 €.'],
+    ['Lomalla', 'Aloita 800 euron käyttörahalla paikallisessa valuutassa ja tiedä aina, mitä on jäljellä.']],
+  waysEnd:["What's Left -menetelmää ei ole.", 'Aloita summalla. Aloita nollasta. Seuraa viikkoa, kuukautta, lomaa tai yhtä iltapäivää.', 'Emme ole täällä kertomassa, miten rahasi käytät.<br>Olemme täällä, jotta näet sen.'],
   manifestoL:'ajatus', readIdea:'Lue ajatus What\'s Leftin takana →', settingsL:'asetukset ja varmuuskopio', menuT:'Valikko',
   manifesto:[
     ['Raha ei enää kulje käden kautta.', 'Se liukuu.', 'Kortti, puhelin, kello. Maksu, jota tuskin huomaa.'],
@@ -499,6 +531,7 @@ function renderInner(){
   else if (view === 'backup') app.innerHTML = viewBackup();
   else if (view === 'setup') app.innerHTML = viewSetup();
   else if (view === 'manifesto') app.innerHTML = viewManifesto();
+  else if (view === 'ways') app.innerHTML = viewWays();
   else app.innerHTML = viewHome();
   if (view === 'new' || view === 'edit') bindForm(view === 'edit' ? byId(id) : null);
   pvClear(); startPreview();
@@ -650,7 +683,7 @@ function viewHome(){
       <p class="steps">${T.steps.join('<br>')}</p>
       <h2 class="sec" style="margin-top:40px">${T.whyTitle}</h2>
       <div class="why">${T.why.map((w, i) => `<div class="w"><span class="no">0${i+1}</span><div><b>${w[0]}</b><p>${w[1]}</p></div></div>`).join('')}</div>
-      <p style="margin:22px 0 0"><a class="link" href="#manifesto">${T.readIdea}</a></p>
+      <p style="margin:22px 0 0;line-height:2"><a class="link" href="#manifesto">${T.readIdea}</a><br><a class="link" href="#ways">${T.waysLink}</a></p>
       <div class="actions" style="margin-top:28px"><button class="btn block" onclick="WL.start()">${T.start}</button></div>
       <div class="dash">_ _ _ _ _ _ _ _ _ _</div>`;
     return out + foot();
@@ -672,6 +705,15 @@ function histItem(t){
 }
 const curSelect = (id, v, on='') => `<select class="inp" id="${id}" ${on ? `onchange="${on}"` : ''}>${Object.entries(CUR).map(([k,c]) => `<option value="${k}" ${k===v?'selected':''}>${curName(k)} (${c.sym})</option>`).join('')}</select>`;
 const foot = () => `<div class="foot">${T.foot}<br><a class="link" href="#backup">${T.footLink}</a> · <a class="link" href="#manifesto">${T.manifestoL}</a></div>`;
+function viewWays(){
+  let out = top(backBtn(''), '');
+  out += `<div class="eyebrow" style="margin-top:14px">${T.waysL}</div><div class="hero-line">${T.waysT}</div>`;
+  out += `<div class="story"><div class="snum">${esc(T.kat.who)}</div><div class="stitle">${esc(T.kat.title)}</div>${T.kat.lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
+  out += `<div class="why" style="margin-top:26px">${T.examples.map((w, i) => `<div class="w"><span class="no">0${i+1}</span><div><b>${esc(w[0])}</b><p>${esc(w[1])}</p></div></div>`).join('')}</div>`;
+  out += `<div class="mani" style="margin-top:30px">${T.waysEnd.map(l => `<p style="margin:0 0 14px">${l}</p>`).join('')}</div>`;
+  out += `<div class="actions" style="margin-top:22px"><button class="btn block" onclick="${S.trackings.length ? "location.hash=''" : 'WL.start()'}">${S.trackings.length ? T.aria.back.toLowerCase() : T.start}</button></div>`;
+  return out;
+}
 function viewManifesto(){
   let out = top(backBtn(''), '', true);
   out += `<div class="eyebrow" style="margin-top:14px">${T.manifestoL}</div><div class="hero-line">${T.heroA}<br>${T.heroB}</div>`;
@@ -821,6 +863,7 @@ window.WL = {
   close: () => closeSheet(),
   menu(){ openSheet(`<div class="head"><button class="iconbtn" onclick="WL.close()" aria-label="${T.aria.close}">${I.close}</button><div>${T.menuT}</div><span class="spacer"></span></div>
     <div class="menu"><button class="btn ghost block" onclick="location.hash='manifesto'">${T.manifestoL}</button>
+    <button class="btn ghost block" onclick="location.hash='ways'">${T.waysL}</button>
     <button class="btn ghost block" onclick="location.hash='backup'">${T.settingsL}</button></div>`); },
   start(){ location.hash = (mobileBrowser() && !browserOk()) ? 'setup' : 'new'; },
   useBrowser(){ try { localStorage.setItem(BKEY, '1'); } catch(e){} location.hash = S.trackings.length ? '' : 'new'; },
