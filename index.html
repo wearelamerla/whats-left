@@ -216,7 +216,6 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:linear-gradi
 'use strict';
 const KEY = 'whatsleft.v1';
 const DAY = 864e5;
-const PERIODS = {oneoff:'One-off', weekly:'Weekly', fortnightly:'Fortnightly', monthly:'Monthly'};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -228,33 +227,181 @@ const I = {
   close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   del:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12zM17 9l-6 6M11 9l6 6"/></svg>',
   coin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7zM9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
-  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M12 5v14M5 12h14"/></svg>'
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M12 5v14M5 12h14"/></svg>',
+  share:'<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>',
+  add:'<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>'
 };
 
 /* ---------- storage ---------- */
 let S = { trackings: [] };
-function load(){ try { const raw = localStorage.getItem(KEY); if (raw) S = JSON.parse(raw); } catch(e){} if (!Array.isArray(S.trackings)) S = {trackings:[]}; }
+function load(){ try { const raw = localStorage.getItem(KEY); if (raw) S = JSON.parse(raw); } catch(e){} if (!S || !Array.isArray(S.trackings)) S = {trackings:[]}; }
 function migrate(){ if (!CUR[S.cur]) S.cur = 'EUR'; S.trackings.forEach(t => { if (!CUR[t.cur]) t.cur = S.cur; }); }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast('Could not save on this device.'); } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast(T.saveFail); } }
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch(e){}
+
+/* ---------- platform ---------- */
+const UA = navigator.userAgent || '';
+const isIOS = /iphone|ipad|ipod/i.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
+const isAndroid = /android/i.test(UA);
+const inApp = (() => { const m = UA.match(/Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|LinkedInApp|Pinterest|Line\//i);
+  if (!m) return null; const k = m[0].toLowerCase();
+  return k.includes('insta') ? 'Instagram' : k.startsWith('fb') ? 'Facebook' : k.includes('snap') ? 'Snapchat' : (k.includes('tiktok') || k.includes('musical')) ? 'TikTok' : k.includes('linked') ? 'LinkedIn' : k.includes('pinterest') ? 'Pinterest' : null; })();
+const installed = () => { try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch(e){ return false; } };
+
+/* ---------- language ---------- */
+const LANG = {
+en: {
+  tagline:'Become aware. Be in control.',
+  heroA:'Become aware.', heroB:'Be in control.', sub:'A simple spending tracker.',
+  start:'start tracking', previewCap:'add a purchase in seconds',
+  steps:['Set an amount.', 'Tap in what you spend.', "Know what's left."],
+  whyTitle:"why what's left?",
+  why:[
+    ['Always know where you stand.', 'Add purchases as you go. Your total updates instantly.'],
+    ['Start with a budget. Or at zero.', "Track what's left, or simply see what you've spent."],
+    ['No categories. No bank links.', 'Just a number and a few taps. Nothing to set up.'],
+    ['Built for real life.', 'Weekly spending, Christmas shopping, a trip abroad, all side by side.'],
+    ['Yours alone.', 'Everything stays on your phone. No account, nothing sent anywhere.']],
+  foot:'Saved only on this phone.', footLink:'Settings &amp; backup',
+  active:'active', history:'history', newTracking:'new tracking',
+  noneActive:'Nothing running right now.', noneHistory:'Finished trackings are saved here.',
+  periods:{oneoff:'One-off', weekly:'Weekly', fortnightly:'Fortnightly', monthly:'Monthly'},
+  defName:{oneoff:'Tracking', weekly:'Weekly budget', fortnightly:'Fortnightly budget', monthly:'Monthly budget'},
+  left:'left', over:'over', spentW:'spent', overBudget:'over budget', wasLeft:'was left', budget:'budget',
+  daysLeft:n => `${n} day${n>1?'s':''} left`, perDay:x => `${x} per day`, ofSpent:(a,b) => `${a} of ${b} spent`,
+  purchases:n => `${n} purchase${n===1?'':'s'}`, daysRemaining:n => `day${n>1?'s':''} remaining`, perDayL:'per day',
+  under:x => `${x} under`, overBy:x => `${x} over`,
+  histEyebrow:'history', addExpense:'add expense', reopen:'reopen', purchasesTitle:'purchases', purchaseDefault:'Purchase', nothingYet:'Nothing added yet.',
+  today:'Today', yesterday:'Yesterday', whenFmt:(d,t) => `${d}, ${t}`,
+  editT:'Edit.', newT:'New tracking.', nameL:'name', namePh:'e.g. Weekly budget, Christmas shopping',
+  howTrack:'how do you want to track?', withAmount:'With an amount', withAmountN:"shows what's left", atZero:'At zero', atZeroN:"shows what's spent",
+  howMuch:'how much do you have to spend?', change:'change', periodL:'period', save:'save', add:'add', del:'delete',
+  hintOneoff:'Runs until you end it. Good for a trip, a shopping day or Christmas.',
+  hintRecur:(start, p) => `Starts ${start}. When the ${ {weekly:'week', fortnightly:'fortnight', monthly:'month'}[p] } ends, it's saved to history and a fresh one begins.`,
+  todayLower:'today', needAmount:'Add an amount, or choose “At zero”.',
+  currency:'Currency', addExpenseT:'Add expense', editExpenseT:'Edit expense', notePh:'Optional note',
+  added:x => `${x} added`, deleted:'Deleted', savedHist:'Saved to history', reopened:'Reopened', backupSaved:'Backup saved', restored:'Restored',
+  notBackup:"That file isn't a What's Left? backup.", installedToast:'Added to your home screen', saveFail:'Could not save on this device.',
+  curToast:name => `New trackings will use ${name.toLowerCase()}`,
+  confirmDelExp:'Delete this purchase?',
+  confirmEnd:(n, oneoff) => oneoff ? `End “${n}” and save it to history?` : `End “${n}”? It's saved to history and won't start again.`,
+  confirmRemove:n => `Delete “${n}” and all its purchases? This can't be undone.`,
+  confirmImport:k => `Replace everything on this phone with the backup (${k} trackings)?`,
+  optEdit:'edit name, amount or period', optEnd:'end &amp; save to history',
+  settingsT:'Settings.', settingsSub:'Everything lives only on this phone. Nothing is sent anywhere. Clearing your browser data or deleting the app removes it, so keep a backup.',
+  langL:'language', defCur:'default currency', defCurHint:'Used for new trackings. Existing trackings keep their own currency.',
+  statTrack:'trackings', statPurch:'purchases', lastBackup:d => `Last backup: ${d}`, noBackup:'No backup yet.',
+  saveBackup:'save a backup', restore:'restore from backup',
+  tipIOS:'Tip: choose <b>Save to Files</b> → <b>iCloud Drive</b>, so it isn’t only on this phone.',
+  tipOther:'Tip: save it to Google Drive or email it to yourself, so it isn’t only on this phone.',
+  a2hsHint:'Add to your home screen: in Safari tap Share → Add to Home Screen.<br>On Android, open the Chrome menu → Add to Home screen.',
+  backupT:'Save a backup.', backupP:'Your spending lives only on this phone. A backup keeps it safe if you lose or change phones.',
+  bline:safari => `You're using ${safari ? 'Safari' : 'the browser'}. <b>Move to the app</b>`,
+  setupEyebrow:'before you start', setupT:'Two quick steps.', moveEyebrow:"keep what you've tracked", moveT:'Move to the app.',
+  stepL:n => `step ${n}`,
+  saveHaveT:'Save what you have.', saveHaveP:"On iPhone, the home-screen app has its own storage, so what you've tracked here won't move over by itself. Save a backup first, then restore it in the app from <b>Settings</b>.",
+  addHomeT:'Add to your home screen.', addHomeP:"What's Left works best as an app: it opens full-screen, works offline, and keeps your spending safe with it.", addHomeIOS:' On iPhone, anything you track in Safari stays in Safari.',
+  howIOS:`Tap <b>Share</b> ${'{share}'} then <b>Add to Home Screen</b> ${'{add}'}`, cantSee:"Can't see Share? It's in Safari's <b>⋯</b> menu.",
+  howAndroidBtn:'add to home screen', howAndroid:'Open the browser menu <b>⋮</b> and tap <b>Add to Home screen</b> or <b>Install app</b>.',
+  howInApp:(app, safari) => `You're inside ${app || 'another app'}, which can't add apps. Tap <b>⋯</b> and choose <b>Open in ${safari ? 'Safari' : 'browser'}</b>, then come back to this step.`,
+  openStartT:'Open the app and start tracking.', openStartP:"Find <b>What's Left</b> on your home screen and tap <b>start tracking</b>.",
+  openRestoreT:'Open the app and restore.', openRestoreP:"Open <b>What's Left</b> from your home screen, go to <b>Settings</b> and tap <b>restore from backup</b>. Everything will be there.",
+  useBrowser:(has, safari) => `${has ? 'keep tracking' : 'or track'} in ${safari ? 'Safari' : 'the browser'} instead`,
+  errT:'Something went wrong.', errP:'Your data is safe on this phone. Please try again, and save a backup to be sure.', tryAgain:'try again',
+  pv:{name:'Weekly budget', notes:['Groceries','Lunch','Coffee']},
+  aria:{back:'Back', settings:'Settings', options:'Options', close:'Close', changeCur:'Change currency', later:'Remind me later'},
+  cur:{EUR:'Euro', GBP:'Pound sterling', USD:'US dollar', AUD:'Australian dollar', SEK:'Swedish krona', NOK:'Norwegian krone', DKK:'Danish krone'}
+},
+fi: {
+  tagline:'Huomaa. Hallitse.',
+  heroA:'Huomaa.', heroB:'Hallitse.', sub:'Yksinkertainen kulujen seuranta.',
+  start:'aloita seuranta', previewCap:'lisää ostos sekunneissa',
+  steps:['Aseta summa.', 'Kirjaa ostokset.', 'Tiedä, mitä jää.'],
+  whyTitle:"miksi what's left?",
+  why:[
+    ['Tiedät aina, missä mennään.', 'Lisää ostokset sitä mukaa kuin ostat. Summa päivittyy heti.'],
+    ['Aloita summalla. Tai nollasta.', 'Seuraa, paljonko on jäljellä, tai katso vain, paljonko on käytetty.'],
+    ['Ei kategorioita. Ei pankkiyhteyksiä.', 'Vain summa ja muutama napautus. Ei mitään asetettavaa.'],
+    ['Tehty oikeaan elämään.', 'Viikon kulut, joulushoppailu, ulkomaanmatka – kaikki rinnakkain.'],
+    ['Vain sinun.', 'Kaikki pysyy puhelimessasi. Ei tiliä, eikä mitään lähetetä minnekään.']],
+  foot:'Tallennettu vain tähän puhelimeen.', footLink:'Asetukset ja varmuuskopio',
+  active:'käynnissä', history:'historia', newTracking:'uusi seuranta',
+  noneActive:'Ei käynnissä olevia seurantoja.', noneHistory:'Päättyneet seurannat tallentuvat tänne.',
+  periods:{oneoff:'Kerta', weekly:'Viikko', fortnightly:'2 viikkoa', monthly:'Kuukausi'},
+  defName:{oneoff:'Seuranta', weekly:'Viikkobudjetti', fortnightly:'Kahden viikon budjetti', monthly:'Kuukausibudjetti'},
+  left:'jäljellä', over:'yli', spentW:'käytetty', overBudget:'yli budjetin', wasLeft:'jäi jäljelle', budget:'budjetti',
+  daysLeft:n => `${n} pv jäljellä`, perDay:x => `${x} päivässä`, ofSpent:(a,b) => `${a} / ${b} käytetty`,
+  purchases:n => `${n} ${n===1?'ostos':'ostosta'}`, daysRemaining:n => n===1 ? 'päivä jäljellä' : 'päivää jäljellä', perDayL:'päivässä',
+  under:x => `${x} säästyi`, overBy:x => `${x} ylitys`,
+  histEyebrow:'historia', addExpense:'lisää ostos', reopen:'avaa uudelleen', purchasesTitle:'ostokset', purchaseDefault:'Ostos', nothingYet:'Ei vielä ostoksia.',
+  today:'Tänään', yesterday:'Eilen', whenFmt:(d,t) => `${d} klo ${t}`,
+  editT:'Muokkaa.', newT:'Uusi seuranta.', nameL:'nimi', namePh:'esim. Viikkobudjetti, Joulushoppailu',
+  howTrack:'miten haluat seurata?', withAmount:'Summalla', withAmountN:'näyttää, paljonko on jäljellä', atZero:'Nollasta', atZeroN:'näyttää, paljonko on käytetty',
+  howMuch:'paljonko sinulla on käytettävissä?', change:'vaihda', periodL:'jakso', save:'tallenna', add:'lisää', del:'poista',
+  hintOneoff:'Jatkuu, kunnes lopetat sen. Sopii matkalle, ostospäivälle tai jouluun.',
+  hintRecur:(start, p) => `Alkaa ${start}. Kun ${ {weekly:'viikko', fortnightly:'kahden viikon jakso', monthly:'kuukausi'}[p] } päättyy, se tallentuu historiaan ja uusi alkaa.`,
+  todayLower:'tänään', needAmount:'Lisää summa tai valitse ”Nollasta”.',
+  currency:'Valuutta', addExpenseT:'Lisää ostos', editExpenseT:'Muokkaa ostosta', notePh:'Muistiinpano',
+  added:x => `${x} lisätty`, deleted:'Poistettu', savedHist:'Tallennettu historiaan', reopened:'Avattu uudelleen', backupSaved:'Varmuuskopio tallennettu', restored:'Palautettu',
+  notBackup:"Tiedosto ei ole What's Left -varmuuskopio.", installedToast:'Lisätty aloitusnäytölle', saveFail:'Tallennus ei onnistunut tällä laitteella.',
+  curToast:name => `Uudet seurannat käyttävät valuuttaa: ${name}`,
+  confirmDelExp:'Poistetaanko tämä ostos?',
+  confirmEnd:(n, oneoff) => oneoff ? `Lopetetaanko ”${n}” ja tallennetaan historiaan?` : `Lopetetaanko ”${n}”? Se tallentuu historiaan eikä ala uudelleen.`,
+  confirmRemove:n => `Poistetaanko ”${n}” ja kaikki sen ostokset? Tätä ei voi perua.`,
+  confirmImport:k => `Korvataanko kaikki tämän puhelimen tiedot varmuuskopiolla (${k} seurantaa)?`,
+  optEdit:'muokkaa nimeä, summaa tai jaksoa', optEnd:'lopeta ja tallenna historiaan',
+  settingsT:'Asetukset.', settingsSub:'Kaikki on tallennettu vain tähän puhelimeen, eikä mitään lähetetä minnekään. Selaimen tietojen tyhjentäminen tai sovelluksen poistaminen poistaa tiedot, joten pidä varmuuskopio tallessa.',
+  langL:'kieli', defCur:'oletusvaluutta', defCurHint:'Käytetään uusissa seurannoissa. Nykyiset seurannat pitävät oman valuuttansa.',
+  statTrack:'seurannat', statPurch:'ostokset', lastBackup:d => `Viimeisin varmuuskopio: ${d}`, noBackup:'Ei vielä varmuuskopiota.',
+  saveBackup:'tallenna varmuuskopio', restore:'palauta varmuuskopiosta',
+  tipIOS:'Vinkki: valitse <b>Tallenna Tiedostoihin</b> → <b>iCloud Drive</b>, jotta varmuuskopio ei ole vain tässä puhelimessa.',
+  tipOther:'Vinkki: tallenna se Google Driveen tai lähetä itsellesi sähköpostilla, jotta se ei ole vain tässä puhelimessa.',
+  a2hsHint:'Lisää aloitusnäytölle: napauta Safarissa Jaa → Lisää Koti-valikkoon.<br>Androidissa avaa Chromen valikko → Lisää aloitusnäytölle.',
+  backupT:'Tallenna varmuuskopio.', backupP:'Kulusi ovat tallessa vain tässä puhelimessa. Varmuuskopio pitää ne turvassa, jos puhelin katoaa tai vaihtuu.',
+  bline:safari => `Käytät ${safari ? 'Safaria' : 'selainta'}. <b>Siirry sovellukseen</b>`,
+  setupEyebrow:'ennen kuin aloitat', setupT:'Kaksi nopeaa vaihetta.', moveEyebrow:'säilytä kirjauksesi', moveT:'Siirry sovellukseen.',
+  stepL:n => `vaihe ${n}`,
+  saveHaveT:'Tallenna, mitä sinulla on.', saveHaveP:'iPhonessa aloitusnäytön sovelluksella on oma tallennustilansa, joten täällä tehdyt kirjaukset eivät siirry sinne itsestään. Tallenna ensin varmuuskopio ja palauta se sitten sovelluksessa <b>Asetuksista</b>.',
+  addHomeT:'Lisää aloitusnäytölle.', addHomeP:"What's Left toimii parhaiten sovelluksena: se aukeaa koko näytölle, toimii ilman verkkoa ja pitää kulusi tallessa.", addHomeIOS:' iPhonessa Safarissa kirjatut tiedot jäävät Safariin.',
+  howIOS:`Napauta <b>Jaa</b> ${'{share}'} ja sitten <b>Lisää Koti-valikkoon</b> ${'{add}'}`, cantSee:'Etkö näe Jaa-painiketta? Se löytyy Safarin <b>⋯</b>-valikosta.',
+  howAndroidBtn:'lisää aloitusnäytölle', howAndroid:'Avaa selaimen valikko <b>⋮</b> ja napauta <b>Lisää aloitusnäytölle</b> tai <b>Asenna sovellus</b>.',
+  howInApp:(app, safari) => `Olet ${app ? app + '-sovelluksessa' : 'toisessa sovelluksessa'}, josta ei voi lisätä sovelluksia. Napauta <b>⋯</b> ja valitse <b>Avaa ${safari ? 'Safarissa' : 'selaimessa'}</b>, ja palaa sitten tähän vaiheeseen.`,
+  openStartT:'Avaa sovellus ja aloita seuranta.', openStartP:"Etsi <b>What's Left</b> aloitusnäytöltä ja napauta <b>aloita seuranta</b>.",
+  openRestoreT:'Avaa sovellus ja palauta.', openRestoreP:"Avaa <b>What's Left</b> aloitusnäytöltä, mene <b>Asetuksiin</b> ja napauta <b>palauta varmuuskopiosta</b>. Kaikki on tallessa.",
+  useBrowser:(has, safari) => `${has ? 'jatka' : 'tai seuraa'} ${safari ? 'Safarissa' : 'selaimessa'}`,
+  errT:'Jokin meni vikaan.', errP:'Tietosi ovat tallessa tässä puhelimessa. Yritä uudelleen ja tallenna varmuuden vuoksi varmuuskopio.', tryAgain:'yritä uudelleen',
+  pv:{name:'Viikkobudjetti', notes:['Ruokaostokset','Lounas','Kahvi']},
+  aria:{back:'Takaisin', settings:'Asetukset', options:'Valinnat', close:'Sulje', changeCur:'Vaihda valuutta', later:'Muistuta myöhemmin'},
+  cur:{EUR:'Euro', GBP:'Englannin punta', USD:'Yhdysvaltain dollari', AUD:'Australian dollari', SEK:'Ruotsin kruunu', NOK:'Norjan kruunu', DKK:'Tanskan kruunu'}
+}};
+const autoLang = () => { try { return /^fi\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '') ? 'fi' : 'en'; } catch(e){ return 'en'; } };
+let lang = 'en', T = LANG.en, dfmt, tfmt;
+function applyLang(){
+  lang = LANG[S.lang] ? S.lang : autoLang(); T = LANG[lang];
+  const loc = lang === 'fi' ? 'fi-FI' : 'en-GB';
+  dfmt = new Intl.DateTimeFormat(loc, lang === 'fi' ? {day:'numeric', month:'numeric'} : {day:'numeric', month:'short'});
+  tfmt = new Intl.DateTimeFormat(loc, {hour:'2-digit', minute:'2-digit'});
+  document.documentElement.lang = lang;
+}
 
 /* ---------- money & dates ---------- */
 const CUR = {
-  EUR:{name:'Euro', sym:'€', after:true, dec:',', grp:'\u00a0'},
-  GBP:{name:'Pound sterling', sym:'£', after:false, dec:'.', grp:','},
-  USD:{name:'US dollar', sym:'$', after:false, dec:'.', grp:','},
-  AUD:{name:'Australian dollar', sym:'A$', after:false, dec:'.', grp:','},
-  SEK:{name:'Swedish krona', sym:'kr', after:true, dec:',', grp:'\u00a0'},
-  NOK:{name:'Norwegian krone', sym:'kr', after:true, dec:',', grp:'\u00a0'},
-  DKK:{name:'Danish krone', sym:'kr', after:true, dec:',', grp:'.'}
+  EUR:{sym:'€', after:true, dec:',', grp:' '},
+  GBP:{sym:'£', after:false, dec:'.', grp:','},
+  USD:{sym:'$', after:false, dec:'.', grp:','},
+  AUD:{sym:'A$', after:false, dec:'.', grp:','},
+  SEK:{sym:'kr', after:true, dec:',', grp:' '},
+  NOK:{sym:'kr', after:true, dec:',', grp:' '},
+  DKK:{sym:'kr', after:true, dec:',', grp:'.'}
 };
+const curName = k => T.cur[k] || k;
 const curOf = t => CUR[(t && t.cur) || S.cur] || CUR.EUR;
 function num(c, C){ const a = Math.abs(c), w = Math.floor(a / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, C.grp);
   return w + C.dec + String(a % 100).padStart(2, '0'); }
 function money(c, C){ const n = num(c, C), sign = c < 0 ? '−' : '';
-  return C.after ? sign + n + '\u00a0' + C.sym : sign + C.sym + n; }
+  return C.after ? sign + n + ' ' + C.sym : sign + C.sym + n; }
 const fmtFor = t => { const C = curOf(t); return c => money(c, C); };
-function parseFor(str, C){ let v = String(str).replace(/[\s\u00a0]/g, '');
+function parseFor(str, C){ let v = String(str).replace(/[\s ]/g, '');
   const other = C.dec === ',' ? '.' : ',';
   if (v.includes(C.dec)) v = v.split(other).join('');
   else if (v.includes(other) && /[.,]\d{1,2}$/.test(v) && v.split(other).length === 2) v = v.replace(other, C.dec);
@@ -268,12 +415,10 @@ function addPeriod(t, p){ const d = new Date(t);
   else if (p === 'fortnightly') d.setDate(d.getDate() + 14);
   else if (p === 'monthly') d.setMonth(d.getMonth() + 1);
   return d.getTime(); }
-const dfmt = new Intl.DateTimeFormat('en-GB', {day:'numeric', month:'short'});
-const tfmt = new Intl.DateTimeFormat('en-GB', {hour:'2-digit', minute:'2-digit'});
 function when(t){ const today = startOfDay(Date.now()), d = startOfDay(t);
-  const day = d === today ? 'Today' : d === today - DAY ? 'Yesterday' : dfmt.format(t);
-  return day + ', ' + tfmt.format(t); }
-const range = t => dfmt.format(t.start) + ' – ' + dfmt.format((t.endedAt || t.end || Date.now()) - (t.end && !t.endedAt ? 1 : 0));
+  const day = d === today ? T.today : d === today - DAY ? T.yesterday : dfmt.format(t);
+  return T.whenFmt(day, tfmt.format(t)); }
+const range = t => dfmt.format(t.start) + '–' + dfmt.format((t.endedAt || t.end || Date.now()) - (t.end && !t.endedAt ? 1 : 0));
 
 /* ---------- model ---------- */
 const spent = t => t.expenses.reduce((a, e) => a + e.amount, 0);
@@ -315,10 +460,10 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { ro
 function render(){
   try { renderInner(); } catch(err) {
     try { console.error(err); } catch(e){}
-    $('#app').innerHTML = top('', '') + `<div class="hero-line" style="margin-top:20px">Something went wrong.</div>
-      <p class="sub">Your data is safe on this phone. Please try again, and save a backup to be sure.</p>
-      <div class="actions"><button class="btn block" onclick="location.hash='';location.reload()">try again</button>
-      <button class="btn ghost block" onclick="WL.exportData()">save a backup</button></div>
+    $('#app').innerHTML = top('', '') + `<div class="hero-line" style="margin-top:20px">${T.errT}</div>
+      <p class="sub">${T.errP}</p>
+      <div class="actions"><button class="btn block" onclick="location.hash='';location.reload()">${T.tryAgain}</button>
+      <button class="btn ghost block" onclick="WL.exportData()">${T.saveBackup}</button></div>
       <p class="hint" style="text-align:center">${esc(err && err.message)}</p>`;
   }
 }
@@ -339,93 +484,53 @@ function renderInner(){
 }
 
 /* ---------- views ---------- */
-function top(left, right){ return `<div class="top">${left || '<span class="spacer"></span>'}<div class="brandwrap"><div class="brand">What's Left?</div><div class="tagline">Become aware. Be in control.</div></div>${right || '<span class="spacer"></span>'}</div>`; }
-const backBtn = (to='') => `<button class="iconbtn" aria-label="Back" onclick="location.hash='${to}'">${I.back}</button>`;
+function top(left, right, noTag){ return `<div class="top">${left || '<span class="spacer"></span>'}<div class="brandwrap"><div class="brand">What's Left?</div>${noTag ? '' : `<div class="tagline">${T.tagline}</div>`}</div>${right || '<span class="spacer"></span>'}</div>`; }
+const backBtn = (to='') => `<button class="iconbtn" aria-label="${T.aria.back}" onclick="location.hash='${to}'">${I.back}</button>`;
 
 function cardFor(t){
   const m = summary(t), eur = fmtFor(t);
-  const tag = t.period === 'oneoff' ? '' : `<span class="tag soft">${PERIODS[t.period]}</span>`;
+  const tag = t.period === 'oneoff' ? '' : `<span class="tag soft">${T.periods[t.period]}</span>`;
   let amt, meta = '', bar = '';
   if (hasBudget(t)) {
-    amt = `<span class="${m.over ? 'neg' : ''}">${eur(m.over ? -m.left : m.left)}</span><small>${m.over ? 'over' : 'left'}</small>`;
+    amt = `<span class="${m.over ? 'neg' : ''}">${eur(m.over ? -m.left : m.left)}</span><small>${m.over ? T.over : T.left}</small>`;
     bar = `<div class="bar ${m.over ? 'over' : ''}"><i style="width:${m.pct}%"></i></div>`;
-    meta = m.days ? `${m.days} day${m.days>1?'s':''} left${m.perDay != null ? ' · ' + eur(m.perDay) + ' per day' : ''}` : `${eur(m.spent)} of ${eur(t.amount)} spent`;
+    meta = m.days ? T.daysLeft(m.days) + (m.perDay != null ? ' · ' + T.perDay(eur(m.perDay)) : '') : T.ofSpent(eur(m.spent), eur(t.amount));
   } else {
-    amt = `${eur(m.spent)}<small>spent</small>`;
-    meta = `${t.expenses.length} purchase${t.expenses.length === 1 ? '' : 's'}${m.days ? ' · ' + m.days + ' day' + (m.days>1?'s':'') + ' left' : ''}`;
+    amt = `${eur(m.spent)}<small>${T.spentW}</small>`;
+    meta = T.purchases(t.expenses.length) + (m.days ? ' · ' + T.daysLeft(m.days) : '');
   }
   return `<button class="card" onclick="location.hash='t/${t.id}'">
     <div class="row"><span class="name">${esc(t.name)}</span>${tag}</div>
     <div class="amt">${amt}</div>${bar}<div class="meta">${meta}</div></button>`;
 }
 
-const WHY = [
-  ['Always know where you stand.', 'Add purchases as you go. Your total updates instantly.'],
-  ['Start with a budget. Or at zero.', "Track what's left, or simply see what you've spent."],
-  ['No categories. No bank links.', 'Just a number and a few taps. Nothing to set up.'],
-  ['Built for real life.', 'Weekly spending, Christmas shopping, a trip abroad, all side by side.'],
-  ['Yours alone.', 'Everything stays on your phone. No account, nothing sent anywhere.']
-];
-const installed = () => { try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch(e){ return false; } };
-/* ---------- add to home screen ---------- */
-const UA = navigator.userAgent || '';
-const isIOS = /iphone|ipad|ipod/i.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
-const isAndroid = /android/i.test(UA);
-const inApp = (() => { const m = UA.match(/Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|LinkedInApp|Pinterest|Line\//i);
-  if (!m) return null; const k = m[0].toLowerCase();
-  return k.includes('insta') ? 'Instagram' : k.startsWith('fb') ? 'Facebook' : k.includes('snap') ? 'Snapchat' : (k.includes('tiktok') || k.includes('musical')) ? 'TikTok' : k.includes('linked') ? 'LinkedIn' : k.includes('pinterest') ? 'Pinterest' : 'this app'; })();
-let installEvt = null, hideMem = 0;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (!location.hash || location.hash === '#' || location.hash === '#/') render(); });
+/* ---------- android install prompt ---------- */
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (location.hash === '#setup') render(); });
 window.addEventListener('appinstalled', () => { installEvt = null; render(); });
-const HIDE_KEY = 'whatsleft.hideInstall';
-function installHidden(){ let t = hideMem; try { t = +localStorage.getItem(HIDE_KEY) || hideMem; } catch(e){} return Date.now() - t < 3 * DAY; }
-function installCard(){
-  if (installed() || installHidden() || !(isIOS || isAndroid)) return '';
-  const shareI = '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
-  const addI = '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>';
-  let body;
-  if (inApp) body = `<p class="why1">You're viewing this inside ${inApp}, which can't add apps to your home screen.</p>
-      <p class="step">Tap <b>⋯</b> and choose <b>Open in ${isIOS ? 'Safari' : 'browser'}</b>, then add it from there.</p>`;
-  else if (isIOS) {
-    const has = S.trackings.length > 0;
-    body = has
-      ? `<p class="why1">On iPhone, the home-screen app has its own storage. What you've tracked here in Safari won't appear there automatically.</p>
-      <p class="step"><b>1.</b> Save a backup of what you have.<br><b>2.</b> Tap <b>Share</b> ${shareI} then <b>Add to Home Screen</b> ${addI}<br><b>3.</b> In the app, open <b>Settings</b> and tap <b>restore from backup</b>.</p>
-      <button class="btn block" style="margin-top:12px" onclick="WL.exportData()">save a backup</button>
-      <p class="small">Can't see Share? It's in Safari's <b>⋯</b> menu.</p>`
-      : `<p class="why1">Do this first. On iPhone, anything you track in Safari stays in Safari and won't move to the home-screen app.</p>
-      <p class="step">Tap <b>Share</b> ${shareI} then <b>Add to Home Screen</b> ${addI}<br>Then open What's Left from your home screen.</p>
-      <p class="small">Can't see Share? It's in Safari's <b>⋯</b> menu.</p>`;
-  }
-  else if (installEvt) body = `<p class="why1">Works offline, opens full-screen, and keeps your data safer.</p>
-      <button class="btn block" style="margin-top:12px" onclick="WL.install()">add to home screen</button>`;
-  else body = `<p class="why1">Works offline, opens full-screen, and keeps your data safer.</p>
-      <p class="step">Open the browser menu <b>⋮</b> and tap <b>Add to Home screen</b> or <b>Install app</b>.</p>`;
-  return `<div class="install"><button class="x" aria-label="Hide for now" onclick="WL.hideInstall()">${I.close}</button>
-    <div class="it">Add to your home screen.</div>${body}</div>`;
-}
+
 /* ---------- landing preview ---------- */
 let pvTimers = [];
 const pvClear = () => { pvTimers.forEach(clearTimeout); pvTimers = []; };
 function pvTracking(added){
-  const d0 = startOfDay(Date.now()), now = Date.now();
-  const ex = [{id:'g', amount:4230, note:'Groceries', t:now - 26*36e5}, {id:'l', amount:1280, note:'Lunch', t:now - 3*36e5}];
-  if (added) ex.push({id:'c', amount:450, note:'Coffee', t:now});
-  return { id:'pv', name:'Weekly budget', mode:'budget', amount:25000, period:'weekly', cur:S.cur || 'EUR',
+  const d0 = startOfDay(Date.now()), now = Date.now(), n = T.pv.notes;
+  const ex = [{id:'g', amount:4230, note:n[0], t:now - 26*36e5}, {id:'l', amount:1280, note:n[1], t:now - 3*36e5}];
+  if (added) ex.push({id:'c', amount:450, note:n[2], t:now});
+  return { id:'pv', name:T.pv.name, mode:'budget', amount:25000, period:'weekly', cur:S.cur || 'EUR',
     start:d0 - 2*DAY, end:d0 + 5*DAY, status:'active', expenses:ex };
 }
 function pvScreen(added){
   const t = pvTracking(added), f = fmtFor(t);
-  return viewTracking(t) + (added ? `<div class="ptoast">${f(450)} added</div>` : '');
+  return viewTracking(t) + (added ? `<div class="ptoast">${T.added(f(450))}</div>` : '');
 }
 function pvSheet(){
   const C = curOf({cur:S.cur}), keys = ['1','2','3','4','5','6','7','8','9',C.dec,'0','⌫'];
   return `<div class="pscrim"></div><div class="psheet"><div class="grab"></div>
-    <div class="head"><span class="iconbtn">${I.close}</span><div>Add expense</div><span class="spacer"></span></div>
+    <div class="head"><span class="iconbtn">${I.close}</span><div>${T.addExpenseT}</div><span class="spacer"></span></div>
     <div class="display placeholder" id="pvD">${C.after ? '0 ' + C.sym : C.sym + '0'}</div>
-    <div class="note pnote" id="pvN">Optional note</div>
+    <div class="note pnote" id="pvN">${T.notePh}</div>
     <div class="pad">${keys.map(k => `<span class="k" data-k="${k}">${k === '⌫' ? I.del : k}</span>`).join('')}</div>
-    <span class="btn block" id="pvAdd">add</span></div>`;
+    <span class="btn block" id="pvAdd">${T.add}</span></div>`;
 }
 function previewHTML(){
   return `<div class="stage" aria-hidden="true"><div class="phone"><i class="b1"></i><i class="b2"></i><i class="b3"></i>
@@ -449,7 +554,7 @@ function startPreview(){
     at(2500, () => { press('.k[data-k="' + C.dec + '"]'); typed('4' + C.dec); });
     at(2900, () => { press('.k[data-k="5"]'); typed('4' + C.dec + '5'); });
     at(3300, () => { press('.k[data-k="0"]'); typed('4' + C.dec + '50'); });
-    at(3700, () => { const n = $('#pvN'); if (n) { n.textContent = 'Coffee'; n.classList.add('filled'); } });
+    at(3700, () => { const n = $('#pvN'); if (n) { n.textContent = T.pv.notes[2]; n.classList.add('filled'); } });
     at(4300, () => press('#pvAdd'));
     at(4550, () => { sh.classList.remove('open'); });
     at(4800, () => { el.innerHTML = pvScreen(1); });
@@ -463,38 +568,35 @@ function startPreview(){
 const BKEY = 'whatsleft.browserOk';
 const mobileBrowser = () => !installed() && (isIOS || isAndroid);
 function browserOk(){ try { return localStorage.getItem(BKEY) === '1'; } catch(e){ return false; } }
-const browserName = () => inApp ? inApp : isIOS ? 'Safari' : 'the browser';
+const isSafari = () => isIOS && !inApp;
 function browserLine(){
   if (!mobileBrowser()) return '';
-  return `<button class="bline" onclick="location.hash='setup'"><span>You're using ${isIOS && !inApp ? 'Safari' : 'the browser'}. <b>Move to the app</b></span>${I.back}</button>`;
+  return `<button class="bline" onclick="location.hash='setup'"><span>${T.bline(isSafari())}</span>${I.back}</button>`;
 }
 function viewSetup(){
-  const shareI = '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
-  const addI = '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>';
   const has = S.trackings.length > 0;
   let how;
-  if (inApp) how = `<p class="step">You're inside ${inApp}, which can't add apps. Tap <b>⋯</b> and choose <b>Open in ${isIOS ? 'Safari' : 'browser'}</b>, then come back to this step.</p>`;
-  else if (isIOS) how = `<p class="step">Tap <b>Share</b> ${shareI} then <b>Add to Home Screen</b> ${addI}</p><p class="small">Can't see Share? It's in Safari's <b>⋯</b> menu.</p>`;
-  else if (installEvt) how = `<button class="btn block" onclick="WL.install()">add to home screen</button>`;
-  else how = `<p class="step">Open the browser menu <b>⋮</b> and tap <b>Add to Home screen</b> or <b>Install app</b>.</p>`;
+  if (inApp) how = `<p class="step">${T.howInApp(inApp, isIOS)}</p>`;
+  else if (isIOS) how = `<p class="step">${T.howIOS.replace('{share}', I.share).replace('{add}', I.add)}</p><p class="small">${T.cantSee}</p>`;
+  else if (installEvt) how = `<button class="btn block" onclick="WL.install()">${T.howAndroidBtn}</button>`;
+  else how = `<p class="step">${T.howAndroid}</p>`;
   let out = top(backBtn(''), '');
   const mv = has && isIOS, n = k => mv ? k + 1 : k;
-  out += mv ? `<div class="eyebrow" style="margin-top:14px">keep what you've tracked</div><div class="hero-line">Move to the app.</div>`
-            : `<div class="eyebrow" style="margin-top:14px">before you start</div><div class="hero-line">Two quick steps.</div>`;
-  if (mv) out += `<div class="sblock"><div class="snum">step 1</div><div class="stitle">Save what you have.</div>
-      <p>On iPhone, the home-screen app has its own storage, so what you've tracked here won't move over by itself. Save a backup first, then restore it in the app from <b>Settings</b>.</p>
-      <button class="btn ghost block" onclick="WL.exportData()">save a backup</button></div>`;
-  out += `<div class="sblock"><div class="snum">step ${n(1)}</div><div class="stitle">Add to your home screen.</div>
-      <p>What's Left works best as an app: it opens full-screen, works offline, and keeps your spending safe with it.${isIOS ? ' On iPhone, anything you track in Safari stays in Safari.' : ''}</p>${how}</div>`;
-  out += `<div class="sblock"><div class="snum">step ${n(2)}</div><div class="stitle">${mv ? 'Open the app and restore.' : 'Open the app and start tracking.'}</div>
-      <p>${mv ? 'Open <b>What\'s Left</b> from your home screen, go to <b>Settings</b> and tap <b>restore from backup</b>. Everything will be there.' : 'Find <b>What\'s Left</b> on your home screen and tap <b>start tracking</b>.'}</p></div>`;
-  out += `<p style="text-align:center;margin-top:26px"><button class="link" onclick="WL.useBrowser()">${has ? 'keep tracking' : 'or track'} in ${browserName() === 'the browser' ? 'the browser' : browserName()} instead</button></p>`;
+  out += mv ? `<div class="eyebrow" style="margin-top:14px">${T.moveEyebrow}</div><div class="hero-line">${T.moveT}</div>`
+            : `<div class="eyebrow" style="margin-top:14px">${T.setupEyebrow}</div><div class="hero-line">${T.setupT}</div>`;
+  if (mv) out += `<div class="sblock"><div class="snum">${T.stepL(1)}</div><div class="stitle">${T.saveHaveT}</div>
+      <p>${T.saveHaveP}</p>
+      <button class="btn ghost block" onclick="WL.exportData()">${T.saveBackup}</button></div>`;
+  out += `<div class="sblock"><div class="snum">${T.stepL(n(1))}</div><div class="stitle">${T.addHomeT}</div>
+      <p>${T.addHomeP}${isIOS ? T.addHomeIOS : ''}</p>${how}</div>`;
+  out += `<div class="sblock"><div class="snum">${T.stepL(n(2))}</div><div class="stitle">${mv ? T.openRestoreT : T.openStartT}</div>
+      <p>${mv ? T.openRestoreP : T.openStartP}</p></div>`;
+  out += `<p style="text-align:center;margin-top:26px"><button class="link" onclick="WL.useBrowser()">${T.useBrowser(has, isSafari())}</button></p>`;
   return out;
 }
 
 /* ---------- backup reminder ---------- */
-const backupTip = () => isIOS ? 'Tip: choose <b>Save to Files</b> → <b>iCloud Drive</b>, so it isn’t only on this phone.'
-  : 'Tip: save it to Google Drive or email it to yourself, so it isn’t only on this phone.';
+const backupTip = () => isIOS ? T.tipIOS : T.tipOther;
 function backupDue(){
   const n = S.trackings.reduce((a,t) => a + t.expenses.length, 0);
   if (n < 10 && !history().length) return false;
@@ -504,100 +606,101 @@ function backupDue(){
 }
 function backupCard(){
   if (!backupDue()) return '';
-  return `<div class="install"><button class="x" aria-label="Remind me later" onclick="WL.snoozeBackup()">${I.close}</button>
-    <div class="it">Save a backup.</div>
-    <p class="why1">Your spending lives only on this phone. A backup keeps it safe if you lose or change phones.</p>
-    <button class="btn block" style="margin-top:14px" onclick="WL.exportData()">save a backup</button>
+  return `<div class="install"><button class="x" aria-label="${T.aria.later}" onclick="WL.snoozeBackup()">${I.close}</button>
+    <div class="it">${T.backupT}</div>
+    <p class="why1">${T.backupP}</p>
+    <button class="btn block" style="margin-top:14px" onclick="WL.exportData()">${T.saveBackup}</button>
     <p class="small">${backupTip()}</p></div>`;
 }
-const lastBackupText = () => S.lastBackup ? 'Last backup: ' + dfmt.format(S.lastBackup) + ' ' + new Date(S.lastBackup).getFullYear() : 'No backup yet.';
+const fullDate = t => lang === 'fi' ? new Intl.DateTimeFormat('fi-FI').format(t) : dfmt.format(t) + ' ' + new Date(t).getFullYear();
+const lastBackupText = () => S.lastBackup ? T.lastBackup(fullDate(S.lastBackup)) : T.noBackup;
 
 function viewHome(){
   const a = active(), h = history();
-  const menu = `<button class="iconbtn" aria-label="Settings" onclick="location.hash='backup'">${I.menu}</button>`;
-  let out = top('', menu);
+  const menu = `<button class="iconbtn" aria-label="${T.aria.settings}" onclick="location.hash='backup'">${I.menu}</button>`;
   if (!a.length && !h.length) {
-    out = top('', menu).replace('<div class="tagline">Become aware. Be in control.</div>', '');
-    out += `<div class="hero-line" style="margin-top:26px">Become aware.<br>Be in control.</div>
-      <p class="sub">A simple spending tracker.</p>
-      <div class="actions" style="margin-top:22px"><button class="btn block" onclick="WL.start()">start tracking</button></div>
+    let out = top('', menu, true);
+    out += `<div class="hero-line" style="margin-top:26px">${T.heroA}<br>${T.heroB}</div>
+      <p class="sub">${T.sub}</p>
+      <div class="actions" style="margin-top:22px"><button class="btn block" onclick="WL.start()">${T.start}</button></div>
       ${previewHTML()}
-      <div class="eyebrow" style="text-align:center;margin:6px 0 8px">add a purchase in seconds</div>
-      <p class="steps">Set an amount.<br>Tap in what you spend.<br>Know what's left.</p>
-      <h2 class="sec" style="margin-top:40px">why what's left?</h2>
-      <div class="why">${WHY.map((w, i) => `<div class="w"><span class="no">0${i+1}</span><div><b>${w[0]}</b><p>${w[1]}</p></div></div>`).join('')}</div>
-      <div class="actions" style="margin-top:28px"><button class="btn block" onclick="WL.start()">start tracking</button></div>
+      <div class="eyebrow" style="text-align:center;margin:6px 0 8px">${T.previewCap}</div>
+      <p class="steps">${T.steps.join('<br>')}</p>
+      <h2 class="sec" style="margin-top:40px">${T.whyTitle}</h2>
+      <div class="why">${T.why.map((w, i) => `<div class="w"><span class="no">0${i+1}</span><div><b>${w[0]}</b><p>${w[1]}</p></div></div>`).join('')}</div>
+      <div class="actions" style="margin-top:28px"><button class="btn block" onclick="WL.start()">${T.start}</button></div>
       <div class="dash">_ _ _ _ _ _ _ _ _ _</div>`;
     return out + foot();
   }
+  let out = top('', menu);
   out += browserLine() || backupCard();
-  out += `<div class="eyebrow">active</div>`;
-  out += a.length ? a.map(cardFor).join('') : `<div class="list"><div class="empty">Nothing running right now.</div></div>`;
-  out += `<div class="actions" style="margin-top:14px"><button class="btn block" onclick="WL.start()">${I.plus} new tracking</button></div>`;
-  out += `<h2 class="sec">history</h2>`;
-  out += h.length ? `<div class="list">${h.map(histItem).join('')}</div>` : `<div class="list"><div class="empty">Finished trackings are saved here.</div></div>`;
+  out += `<div class="eyebrow">${T.active}</div>`;
+  out += a.length ? a.map(cardFor).join('') : `<div class="list"><div class="empty">${T.noneActive}</div></div>`;
+  out += `<div class="actions" style="margin-top:14px"><button class="btn block" onclick="WL.start()">${I.plus} ${T.newTracking}</button></div>`;
+  out += `<h2 class="sec">${T.history}</h2>`;
+  out += h.length ? `<div class="list">${h.map(histItem).join('')}</div>` : `<div class="list"><div class="empty">${T.noneHistory}</div></div>`;
   return out + foot();
 }
 function histItem(t){
   const s = spent(t), eur = fmtFor(t);
   let v = eur(s), sub = range(t);
-  if (hasBudget(t)) { const d = t.amount - s; sub += ' · ' + (d >= 0 ? eur(d) + ' under' : eur(-d) + ' over'); }
+  if (hasBudget(t)) { const d = t.amount - s; sub += ' · ' + (d >= 0 ? T.under(eur(d)) : T.overBy(eur(-d))); }
   return `<button class="item" onclick="location.hash='t/${t.id}'"><div class="t"><div>${esc(t.name)}</div><span>${sub}</span></div><div class="v">${v}</div></button>`;
 }
-const curSelect = (id, v, on='') => `<select class="inp" id="${id}" ${on ? `onchange="${on}"` : ''}>${Object.entries(CUR).map(([k,c]) => `<option value="${k}" ${k===v?'selected':''}>${c.name} (${c.sym})</option>`).join('')}</select>`;
-const foot = () => `<div class="foot">Saved only on this phone.<br><a class="link" href="#backup">Settings &amp; backup</a></div>`;
+const curSelect = (id, v, on='') => `<select class="inp" id="${id}" ${on ? `onchange="${on}"` : ''}>${Object.entries(CUR).map(([k,c]) => `<option value="${k}" ${k===v?'selected':''}>${curName(k)} (${c.sym})</option>`).join('')}</select>`;
+const foot = () => `<div class="foot">${T.foot}<br><a class="link" href="#backup">${T.footLink}</a></div>`;
 
 function viewTracking(t){
   const m = summary(t), ended = t.status === 'ended', eur = fmtFor(t);
-  const more = `<button class="iconbtn" aria-label="Options" onclick="WL.options('${t.id}')">${I.more}</button>`;
+  const more = `<button class="iconbtn" aria-label="${T.aria.options}" onclick="WL.options('${t.id}')">${I.more}</button>`;
   let out = top(backBtn(''), more);
-  out += `<div class="eyebrow" style="margin-top:14px">${ended ? 'history · ' + range(t) : (t.period === 'oneoff' ? 'one-off' : PERIODS[t.period].toLowerCase() + ' · ' + range(t))}</div>`;
+  out += `<div class="eyebrow" style="margin-top:14px">${ended ? T.histEyebrow + ' · ' + range(t) : (t.period === 'oneoff' ? T.periods.oneoff.toLowerCase() : T.periods[t.period].toLowerCase() + ' · ' + range(t))}</div>`;
   out += `<div class="hero-line" style="font-size:30px">${esc(t.name)}</div>`;
   if (hasBudget(t)) {
     out += `<div class="big ${m.over ? 'over' : ''}"><div class="n ${m.over ? 'neg' : ''}">${eur(m.over ? -m.left : m.left)}</div>
-      <div class="l">${m.over ? 'over budget' : (ended ? 'was left' : 'left')}</div>
+      <div class="l">${m.over ? T.overBudget : (ended ? T.wasLeft : T.left)}</div>
       <div class="bar ${m.over ? 'over' : ''}"><i style="width:${m.pct}%"></i></div></div>`;
     out += `<div class="stats">`;
-    if (!ended && m.days) out += `<div class="stat"><b>${m.days}</b><span>day${m.days>1?'s':''} remaining</span></div><div class="stat"><b>${m.perDay != null ? eur(m.perDay) : '—'}</b><span>per day</span></div>`;
-    else out += `<div class="stat"><b>${eur(m.spent)}</b><span>spent</span></div><div class="stat"><b>${eur(t.amount)}</b><span>budget</span></div>`;
+    if (!ended && m.days) out += `<div class="stat"><b>${m.days}</b><span>${T.daysRemaining(m.days)}</span></div><div class="stat"><b>${m.perDay != null ? eur(m.perDay) : '—'}</b><span>${T.perDayL}</span></div>`;
+    else out += `<div class="stat"><b>${eur(m.spent)}</b><span>${T.spentW}</span></div><div class="stat"><b>${eur(t.amount)}</b><span>${T.budget}</span></div>`;
     out += `</div>`;
   } else {
-    out += `<div class="big"><div class="n">${eur(m.spent)}</div><div class="l">spent${t.expenses.length ? ' · ' + t.expenses.length + ' purchase' + (t.expenses.length>1?'s':'') : ''}</div></div>`;
+    out += `<div class="big"><div class="n">${eur(m.spent)}</div><div class="l">${T.spentW}${t.expenses.length ? ' · ' + T.purchases(t.expenses.length) : ''}</div></div>`;
   }
-  if (!ended) out += `<div class="actions" style="margin-top:16px"><button class="btn block" onclick="WL.addExpense('${t.id}')">${I.plus} add expense</button></div>`;
-  else out += `<div class="actions" style="margin-top:16px"><button class="btn ghost block" onclick="WL.reopen('${t.id}')">reopen</button></div>`;
-  out += `<h2 class="sec">purchases</h2>`;
+  if (!ended) out += `<div class="actions" style="margin-top:16px"><button class="btn block" onclick="WL.addExpense('${t.id}')">${I.plus} ${T.addExpense}</button></div>`;
+  else out += `<div class="actions" style="margin-top:16px"><button class="btn ghost block" onclick="WL.reopen('${t.id}')">${T.reopen}</button></div>`;
+  out += `<h2 class="sec">${T.purchasesTitle}</h2>`;
   const ex = [...t.expenses].sort((a,b) => b.t - a.t);
-  out += ex.length ? `<div class="list">${ex.map(e => `<button class="item" onclick="WL.editExpense('${t.id}','${e.id}')"><span class="dot">${I.coin}</span><div class="t"><div>${esc(e.note || 'Purchase')}</div><span>${when(e.t)}</span></div><div class="v">${eur(e.amount)}</div></button>`).join('')}</div>`
-    : `<div class="list"><div class="empty">Nothing added yet.</div></div>`;
+  out += ex.length ? `<div class="list">${ex.map(e => `<button class="item" onclick="WL.editExpense('${t.id}','${e.id}')"><span class="dot">${I.coin}</span><div class="t"><div>${esc(e.note || T.purchaseDefault)}</div><span>${when(e.t)}</span></div><div class="v">${eur(e.amount)}</div></button>`).join('')}</div>`
+    : `<div class="list"><div class="empty">${T.nothingYet}</div></div>`;
   return out;
 }
 
 function viewForm(t){
   const e = t || { name:'', mode:'budget', amount:0, period:'oneoff', cur: S.cur || 'EUR' };
-  const C = CUR[e.cur] || CUR.EUR;
+  const C = CUR[e.cur] || CUR.EUR, ck = CUR[e.cur] ? e.cur : 'EUR';
   let out = top(backBtn(t ? 't/' + t.id : ''), '');
-  out += `<div class="hero-line" style="margin-top:16px">${t ? 'Edit.' : 'New tracking.'}</div>`;
-  out += `<label class="f" for="fName">name</label><input class="inp" id="fName" maxlength="40" placeholder="e.g. Weekly budget, Christmas shopping" value="${esc(e.name)}">`;
-  out += `<label class="f">how do you want to track?</label><div class="seg opts" id="fMode">
-    <button type="button" data-v="budget" aria-pressed="${e.mode==='budget'}"><b>With an amount</b><span>shows what's left</span></button>
-    <button type="button" data-v="zero" aria-pressed="${e.mode==='zero'}"><b>At zero</b><span>shows what's spent</span></button></div>`;
-  out += `<div id="fAmtWrap"><label class="f" for="fAmt">how much do you have to spend?</label><div class="money ${C.after ? 'after' : ''}" id="fMoney"><button type="button" class="sym" id="fSym" aria-label="Change currency"><span id="fSymT">${C.sym}</span><svg viewBox="0 0 10 6" width="9" height="6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg></button><input class="inp" id="fAmt" inputmode="decimal" autocomplete="off" placeholder="0${C.dec}00" value="${inputStr(e.amount, C)}"></div></div>`;
-  out += `<p class="curline" id="fCurLine"><span id="fCurName">${C.name} (${C.sym})</span> · <button type="button" class="link" id="fCurChange">change</button></p>`;
-  out += `<label class="f">period</label><div class="seg" id="fPeriod">${Object.entries(PERIODS).map(([k,v]) => `<button type="button" data-v="${k}" aria-pressed="${e.period===k}">${v}</button>`).join('')}</div>`;
+  out += `<div class="hero-line" style="margin-top:16px">${t ? T.editT : T.newT}</div>`;
+  out += `<label class="f" for="fName">${T.nameL}</label><input class="inp" id="fName" maxlength="40" placeholder="${T.namePh}" value="${esc(e.name)}">`;
+  out += `<label class="f">${T.howTrack}</label><div class="seg opts" id="fMode">
+    <button type="button" data-v="budget" aria-pressed="${e.mode==='budget'}"><b>${T.withAmount}</b><span>${T.withAmountN}</span></button>
+    <button type="button" data-v="zero" aria-pressed="${e.mode==='zero'}"><b>${T.atZero}</b><span>${T.atZeroN}</span></button></div>`;
+  out += `<div id="fAmtWrap"><label class="f" for="fAmt">${T.howMuch}</label><div class="money ${C.after ? 'after' : ''}" id="fMoney"><button type="button" class="sym" id="fSym" aria-label="${T.aria.changeCur}"><span id="fSymT">${C.sym}</span><svg viewBox="0 0 10 6" width="9" height="6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg></button><input class="inp" id="fAmt" inputmode="decimal" autocomplete="off" placeholder="0${C.dec}00" value="${inputStr(e.amount, C)}"></div></div>`;
+  out += `<p class="curline" id="fCurLine"><span id="fCurName">${curName(ck)} (${C.sym})</span> · <button type="button" class="link" id="fCurChange">${T.change}</button></p>`;
+  out += `<label class="f">${T.periodL}</label><div class="seg" id="fPeriod">${Object.entries(T.periods).map(([k,v]) => `<button type="button" data-v="${k}" aria-pressed="${e.period===k}">${v}</button>`).join('')}</div>`;
   out += `<p class="hint" id="fHint"></p>`;
-  out += `<div class="actions"><button class="btn block" id="fSave">${t ? 'save' : 'start tracking'}</button></div>`;
+  out += `<div class="actions"><button class="btn block" id="fSave">${t ? T.save : T.start}</button></div>`;
   return out;
 }
 function bindForm(t){
   let mode = t ? t.mode : 'budget', period = t ? t.period : 'oneoff';
   let cur = CUR[(t && t.cur) || S.cur] ? ((t && t.cur) || S.cur) : 'EUR';
   const setCur = k => { const prev = CUR[cur], C = CUR[k], v = parseFor($('#fAmt').value, prev); cur = k;
-    $('#fSymT').textContent = C.sym; $('#fMoney').classList.toggle('after', C.after); $('#fCurName').textContent = C.name + ' (' + C.sym + ')';
+    $('#fSymT').textContent = C.sym; $('#fMoney').classList.toggle('after', C.after); $('#fCurName').textContent = curName(k) + ' (' + C.sym + ')';
     $('#fAmt').placeholder = '0' + C.dec + '00'; if (v > 0) $('#fAmt').value = inputStr(v, C); };
   const pickCur = () => {
-    openSheet(`<div class="head"><button class="iconbtn" onclick="WL.close()" aria-label="Close">${I.close}</button><div>Currency</div><span class="spacer"></span></div>
-      <div class="list curpick" style="margin-top:8px">${Object.entries(CUR).map(([k,c]) => `<button class="item" data-k="${k}"><div class="t"><div>${c.name}</div></div><div class="v">${c.sym}${k === cur ? ' ✓' : ''}</div></button>`).join('')}</div>`);
+    openSheet(`<div class="head"><button class="iconbtn" onclick="WL.close()" aria-label="${T.aria.close}">${I.close}</button><div>${T.currency}</div><span class="spacer"></span></div>
+      <div class="list curpick" style="margin-top:8px">${Object.entries(CUR).map(([k,c]) => `<button class="item" data-k="${k}"><div class="t"><div>${curName(k)}</div></div><div class="v">${c.sym}${k === cur ? ' ✓' : ''}</div></button>`).join('')}</div>`);
     $('.curpick').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; setCur(b.dataset.k); closeSheet(); });
   };
   $('#fSym').onclick = pickCur; $('#fCurChange').onclick = pickCur;
@@ -606,16 +709,14 @@ function bindForm(t){
   const upd = () => {
     $('#fAmtWrap').style.display = mode === 'budget' ? '' : 'none';
     $('#fCurLine').style.display = mode === 'budget' ? 'none' : '';
-    $('#fHint').textContent = period === 'oneoff'
-      ? 'Runs until you end it. Good for a trip, a shopping day or Christmas.'
-      : `Starts ${t ? dfmt.format(t.start) : 'today'}. When the ${period === 'monthly' ? 'month' : period === 'weekly' ? 'week' : 'fortnight'} ends, it's saved to history and a fresh one begins.`;
+    $('#fHint').textContent = period === 'oneoff' ? T.hintOneoff : T.hintRecur(t ? dfmt.format(t.start) : T.todayLower, period);
   };
   seg('#fMode', v => mode = v); seg('#fPeriod', v => period = v); upd();
   if (!t) setTimeout(() => $('#fName').focus(), 50);
   $('#fSave').onclick = () => {
-    const name = $('#fName').value.trim() || (period === 'oneoff' ? 'Tracking' : PERIODS[period] + ' budget');
+    const name = $('#fName').value.trim() || T.defName[period];
     let amount = 0;
-    if (mode === 'budget') { amount = parseFor($('#fAmt').value, CUR[cur]); if (!(amount > 0)) { toast('Add an amount, or choose “At zero”.'); $('#fAmt').focus(); return; } }
+    if (mode === 'budget') { amount = parseFor($('#fAmt').value, CUR[cur]); if (!(amount > 0)) { toast(T.needAmount); $('#fAmt').focus(); return; } }
     if (t) {
       Object.assign(t, { name, mode, amount, cur });
       if (t.period !== period) { t.period = period; t.end = period === 'oneoff' ? null : addPeriod(t.start, period); }
@@ -632,18 +733,20 @@ function bindForm(t){
 function viewBackup(){
   const n = S.trackings.length, ex = S.trackings.reduce((a,t) => a + t.expenses.length, 0);
   let out = top(backBtn(''), '');
-  out += `<div class="hero-line" style="margin-top:16px">Settings.</div>
-    <p class="sub">Everything lives only on this phone. Nothing is sent anywhere. Clearing your browser data or deleting the app removes it, so keep a backup.</p>
-    <label class="f" for="sCur">default currency</label>${curSelect('sCur', S.cur || 'EUR', "WL.setCur(this.value)")}
-    <p class="hint">Used for new trackings. Existing trackings keep their own currency.</p>
-    <div class="stats" style="margin-top:18px"><div class="stat"><b>${n}</b><span>trackings</span></div><div class="stat"><b>${ex}</b><span>purchases</span></div></div>
+  out += `<div class="hero-line" style="margin-top:16px">${T.settingsT}</div>
+    <p class="sub">${T.settingsSub}</p>
+    <label class="f">${T.langL}</label>
+    <div class="seg" id="sLang"><button type="button" aria-pressed="${lang==='fi'}" onclick="WL.setLang('fi')">Suomi</button><button type="button" aria-pressed="${lang==='en'}" onclick="WL.setLang('en')">English</button></div>
+    <label class="f" for="sCur">${T.defCur}</label>${curSelect('sCur', S.cur || 'EUR', "WL.setCur(this.value)")}
+    <p class="hint">${T.defCurHint}</p>
+    <div class="stats" style="margin-top:18px"><div class="stat"><b>${n}</b><span>${T.statTrack}</span></div><div class="stat"><b>${ex}</b><span>${T.statPurch}</span></div></div>
     <p class="hint" style="margin-top:22px;text-align:center"><b>${lastBackupText()}</b></p>
-    <div class="actions" style="margin-top:12px"><button class="btn block" onclick="WL.exportData()">save a backup</button>
-    <button class="btn ghost block" onclick="document.getElementById('imp').click()">restore from backup</button>
+    <div class="actions" style="margin-top:12px"><button class="btn block" onclick="WL.exportData()">${T.saveBackup}</button>
+    <button class="btn ghost block" onclick="document.getElementById('imp').click()">${T.restore}</button>
     <input type="file" id="imp" accept="application/json,.json" hidden onchange="WL.importData(this)"></div>
     <p class="hint" style="text-align:center">${backupTip()}</p>
     <div class="dash">_ _ _ _ _ _ _ _ _ _</div>
-    <p class="hint" style="text-align:center">Add to your home screen: in Safari tap Share → Add to Home Screen.<br>On Android, open the Chrome menu → Add to Home screen.</p>`;
+    <p class="hint" style="text-align:center">${T.a2hsHint}</p>`;
   return out;
 }
 
@@ -664,11 +767,11 @@ function keypad(opts){
   const C = opts.cur, D = C.dec;
   let s = opts.amount ? inputStr(opts.amount, C).replace(new RegExp('\\' + D + '00$'), '') : '';
   const keys = ['1','2','3','4','5','6','7','8','9',D,'0','⌫'];
-  openSheet(`<div class="head"><button class="iconbtn" onclick="WL.close()" aria-label="Close">${I.close}</button><div>${esc(opts.title)}</div><span class="spacer"></span></div>
+  openSheet(`<div class="head"><button class="iconbtn" onclick="WL.close()" aria-label="${T.aria.close}">${I.close}</button><div>${esc(opts.title)}</div><span class="spacer"></span></div>
     <div class="display" id="kd"></div>
-    <input class="note" id="kn" placeholder="Optional note" maxlength="40" value="${esc(opts.note || '')}">
+    <input class="note" id="kn" placeholder="${T.notePh}" maxlength="40" value="${esc(opts.note || '')}">
     <div class="pad" id="kp">${keys.map(k => `<button type="button" data-k="${k}">${k === '⌫' ? I.del : k}</button>`).join('')}</div>
-    ${opts.onDelete ? `<div class="row2"><button class="btn danger" id="kdel">delete</button><button class="btn" id="ks">save</button></div>` : `<button class="btn block" id="ks">add</button>`}`);
+    ${opts.onDelete ? `<div class="row2"><button class="btn danger" id="kdel">${T.del}</button><button class="btn" id="ks">${T.save}</button></div>` : `<button class="btn block" id="ks">${T.add}</button>`}`);
   const show = () => { const d = $('#kd'), v = s || '0'; d.textContent = C.after ? v + ' ' + C.sym : C.sym + v; d.classList.toggle('placeholder', !s); $('#ks').disabled = !(parseCents(s.replace(D, '.')) > 0); };
   $('#kp').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; const k = b.dataset.k;
     if (k === '⌫') s = s.slice(0, -1);
@@ -687,31 +790,31 @@ window.WL = {
   close: () => closeSheet(),
   start(){ location.hash = (mobileBrowser() && !browserOk()) ? 'setup' : 'new'; },
   useBrowser(){ try { localStorage.setItem(BKEY, '1'); } catch(e){} location.hash = S.trackings.length ? '' : 'new'; },
-  markBackup(){ S.lastBackup = Date.now(); delete S.backupSnooze; save(); render(); toast('Backup saved'); },
+  setLang(l){ S.lang = l; save(); applyLang(); render(); },
+  markBackup(){ S.lastBackup = Date.now(); delete S.backupSnooze; save(); render(); toast(T.backupSaved); },
   snoozeBackup(){ S.backupSnooze = Date.now(); save(); render(); },
-  hideInstall(){ hideMem = Date.now(); try { localStorage.setItem(HIDE_KEY, String(hideMem)); } catch(e){} render(); },
   async install(){ if (!installEvt) return; const e = installEvt; installEvt = null;
-    try { e.prompt(); const r = await e.userChoice; if (r && r.outcome === 'accepted') toast('Added to your home screen'); } catch(err){} render(); },
-  setCur(v){ S.cur = v; save(); toast('New trackings will use ' + CUR[v].name.toLowerCase()); },
-  addExpense(id){ const t = byId(id); keypad({ title: 'Add expense', cur: curOf(t), onSave(c, note){ t.expenses.push({ id: uid(), amount: c, note, t: Date.now() }); save(); render(); toast(fmtFor(t)(c) + ' added'); } }); },
+    try { e.prompt(); const r = await e.userChoice; if (r && r.outcome === 'accepted') toast(T.installedToast); } catch(err){} render(); },
+  setCur(v){ S.cur = v; save(); toast(T.curToast(curName(v))); },
+  addExpense(id){ const t = byId(id); keypad({ title: T.addExpenseT, cur: curOf(t), onSave(c, note){ t.expenses.push({ id: uid(), amount: c, note, t: Date.now() }); save(); render(); toast(T.added(fmtFor(t)(c))); } }); },
   editExpense(id, eid){ const t = byId(id), e = t.expenses.find(x => x.id === eid);
-    keypad({ title: 'Edit expense', cur: curOf(t), amount: e.amount, note: e.note,
+    keypad({ title: T.editExpenseT, cur: curOf(t), amount: e.amount, note: e.note,
       onSave(c, note){ e.amount = c; e.note = note; save(); render(); },
-      onDelete(){ if (!confirm('Delete this purchase?')) return; t.expenses = t.expenses.filter(x => x.id !== eid); save(); render(); toast('Deleted'); } }); },
+      onDelete(){ if (!confirm(T.confirmDelExp)) return; t.expenses = t.expenses.filter(x => x.id !== eid); save(); render(); toast(T.deleted); } }); },
   options(id){ const t = byId(id), ended = t.status === 'ended';
-    openSheet(`<div class="head"><button class="iconbtn" onclick="WL.close()" aria-label="Close">${I.close}</button><div>${esc(t.name)}</div><span class="spacer"></span></div>
-      <div class="menu">${ended ? `<button class="btn ghost block" onclick="WL.reopen('${id}')">reopen</button>`
-        : `<button class="btn ghost block" onclick="location.hash='edit/${id}'">edit name, amount or period</button>
-           <button class="btn ghost block" onclick="WL.end('${id}')">end &amp; save to history</button>`}
-      <button class="btn danger block" onclick="WL.remove('${id}')">delete</button></div>`); },
+    openSheet(`<div class="head"><button class="iconbtn" onclick="WL.close()" aria-label="${T.aria.close}">${I.close}</button><div>${esc(t.name)}</div><span class="spacer"></span></div>
+      <div class="menu">${ended ? `<button class="btn ghost block" onclick="WL.reopen('${id}')">${T.reopen}</button>`
+        : `<button class="btn ghost block" onclick="location.hash='edit/${id}'">${T.optEdit}</button>
+           <button class="btn ghost block" onclick="WL.end('${id}')">${T.optEnd}</button>`}
+      <button class="btn danger block" onclick="WL.remove('${id}')">${T.del}</button></div>`); },
   end(id){ const t = byId(id);
-    if (!confirm(t.period === 'oneoff' ? `End “${t.name}” and save it to history?` : `End “${t.name}”? It's saved to history and won't start again next ${t.period === 'monthly' ? 'month' : 'period'}.`)) return;
-    t.status = 'ended'; t.endedAt = Date.now(); save(); location.hash = ''; toast('Saved to history'); },
+    if (!confirm(T.confirmEnd(t.name, t.period === 'oneoff'))) return;
+    t.status = 'ended'; t.endedAt = Date.now(); save(); location.hash = ''; toast(T.savedHist); },
   reopen(id){ const t = byId(id);
     if (t.period !== 'oneoff' && t.end && Date.now() >= t.end) { t.period = 'oneoff'; t.end = null; }
-    t.status = 'active'; delete t.endedAt; save(); render(); toast('Reopened'); },
-  remove(id){ const t = byId(id); if (!confirm(`Delete “${t.name}” and all its purchases? This can't be undone.`)) return;
-    S.trackings = S.trackings.filter(x => x.id !== id); save(); location.hash = ''; render(); toast('Deleted'); },
+    t.status = 'active'; delete t.endedAt; save(); render(); toast(T.reopened); },
+  remove(id){ const t = byId(id); if (!confirm(T.confirmRemove(t.name))) return;
+    S.trackings = S.trackings.filter(x => x.id !== id); save(); location.hash = ''; render(); toast(T.deleted); },
   async exportData(){
     const name = 'whats-left-backup-' + new Date().toISOString().slice(0,10) + '.json';
     const blob = new Blob([JSON.stringify({ app: 'whats-left', version: 1, exported: Date.now(), ...S }, null, 1)], { type: 'application/json' });
@@ -723,14 +826,14 @@ window.WL = {
   },
   importData(input){ const f = input.files && input.files[0]; if (!f) return; const r = new FileReader();
     r.onload = () => { try { const d = JSON.parse(r.result); if (!Array.isArray(d.trackings)) throw 0;
-        if (!confirm(`Replace everything on this phone with the backup (${d.trackings.length} trackings)?`)) return;
-        S = { trackings: d.trackings, cur: d.cur || S.cur, lastBackup: d.exported || S.lastBackup }; migrate(); save(); rollover(); location.hash = ''; render(); toast('Restored');
-      } catch(e){ toast("That file isn't a What's Left? backup."); } finally { input.value = ''; } };
+        if (!confirm(T.confirmImport(d.trackings.length))) return;
+        S = { trackings: d.trackings, cur: d.cur || S.cur, lang: S.lang, lastBackup: d.exported || S.lastBackup }; migrate(); save(); rollover(); location.hash = ''; render(); toast(T.restored);
+      } catch(e){ toast(T.notBackup); } finally { input.value = ''; } };
     r.readAsText(f); }
 };
 
 /* ---------- start ---------- */
-load(); migrate(); rollover(); render();
+load(); migrate(); applyLang(); rollover(); render();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>
