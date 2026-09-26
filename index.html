@@ -301,6 +301,16 @@ window.addEventListener('hashchange', render);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { rollover(); render(); } });
 
 function render(){
+  try { renderInner(); } catch(err) {
+    try { console.error(err); } catch(e){}
+    $('#app').innerHTML = top('', '') + `<div class="hero-line" style="margin-top:20px">Something went wrong.</div>
+      <p class="sub">Your data is safe on this phone. Please try again, and save a backup to be sure.</p>
+      <div class="actions"><button class="btn block" onclick="location.hash='';location.reload()">try again</button>
+      <button class="btn ghost block" onclick="WL.exportData()">save a backup</button></div>
+      <p class="hint" style="text-align:center">${esc(err && err.message)}</p>`;
+  }
+}
+function renderInner(){
   closeSheet(true);
   const h = location.hash.replace(/^#\/?/, '');
   const [view, id] = h.split('/');
@@ -427,6 +437,26 @@ function startPreview(){
   };
   run();
 }
+
+/* ---------- backup reminder ---------- */
+const backupTip = () => isIOS ? 'Tip: choose <b>Save to Files</b> → <b>iCloud Drive</b>, so it isn’t only on this phone.'
+  : 'Tip: save it to Google Drive or email it to yourself, so it isn’t only on this phone.';
+function backupDue(){
+  const n = S.trackings.reduce((a,t) => a + t.expenses.length, 0);
+  if (n < 10 && !history().length) return false;
+  const now = Date.now();
+  if (S.backupSnooze && now - S.backupSnooze < 14 * DAY) return false;
+  return !S.lastBackup || now - S.lastBackup > 30 * DAY;
+}
+function backupCard(){
+  if (!backupDue()) return '';
+  return `<div class="install"><button class="x" aria-label="Remind me later" onclick="WL.snoozeBackup()">${I.close}</button>
+    <div class="it">Save a backup.</div>
+    <p class="why1">Your spending lives only on this phone. A backup keeps it safe if you lose or change phones.</p>
+    <button class="btn block" style="margin-top:14px" onclick="WL.exportData()">save a backup</button>
+    <p class="small">${backupTip()}</p></div>`;
+}
+const lastBackupText = () => S.lastBackup ? 'Last backup: ' + dfmt.format(S.lastBackup) + ' ' + new Date(S.lastBackup).getFullYear() : 'No backup yet.';
 
 function viewHome(){
   const a = active(), h = history();
