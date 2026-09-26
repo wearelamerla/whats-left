@@ -398,7 +398,7 @@ const curName = k => T.cur[k] || k;
 const curOf = t => CUR[(t && t.cur) || S.cur] || CUR.EUR;
 function num(c, C){ const a = Math.abs(c), w = Math.floor(a / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, C.grp);
   return w + C.dec + String(a % 100).padStart(2, '0'); }
-function money(c, C){ const n = num(c, C), sign = c < 0 ? '−' : '';
+function money(c, C){ const n = num(c, C), sign = c < 0 && Math.abs(c) > 0 ? '−' : '';
   return C.after ? sign + n + ' ' + C.sym : sign + C.sym + n; }
 const fmtFor = t => { const C = curOf(t); return c => money(c, C); };
 function parseFor(str, C){ let v = String(str).replace(/[\s ]/g, '');
@@ -496,7 +496,7 @@ function cardFor(t){
     bar = `<div class="bar ${m.over ? 'over' : ''}"><i style="width:${m.pct}%"></i></div>`;
     meta = m.days ? T.daysLeft(m.days) + (m.perDay != null ? ' · ' + T.perDay(eur(m.perDay)) : '') : T.ofSpent(eur(m.spent), eur(t.amount));
   } else {
-    amt = `${eur(m.spent)}<small>${T.spentW}</small>`;
+    amt = `${eur(-m.spent)}<small>${T.spentW}</small>`;
     meta = T.purchases(t.expenses.length) + (m.days ? ' · ' + T.daysLeft(m.days) : '');
   }
   return `<button class="card" onclick="location.hash='t/${t.id}'">
@@ -643,7 +643,7 @@ function viewHome(){
 }
 function histItem(t){
   const s = spent(t), eur = fmtFor(t);
-  let v = eur(s), sub = range(t);
+  let v = hasBudget(t) ? eur(s) : eur(-s), sub = range(t);
   if (hasBudget(t)) { const d = t.amount - s; sub += ' · ' + (d >= 0 ? T.under(eur(d)) : T.overBy(eur(-d))); }
   return `<button class="item" onclick="location.hash='t/${t.id}'"><div class="t"><div>${esc(t.name)}</div><span>${sub}</span></div><div class="v">${v}</div></button>`;
 }
@@ -665,13 +665,13 @@ function viewTracking(t){
     else out += `<div class="stat"><b>${eur(m.spent)}</b><span>${T.spentW}</span></div><div class="stat"><b>${eur(t.amount)}</b><span>${T.budget}</span></div>`;
     out += `</div>`;
   } else {
-    out += `<div class="big"><div class="n">${eur(m.spent)}</div><div class="l">${T.spentW}${t.expenses.length ? ' · ' + T.purchases(t.expenses.length) : ''}</div></div>`;
+    out += `<div class="big"><div class="n">${eur(-m.spent)}</div><div class="l">${T.spentW}${t.expenses.length ? ' · ' + T.purchases(t.expenses.length) : ''}</div></div>`;
   }
   if (!ended) out += `<div class="actions" style="margin-top:16px"><button class="btn block" onclick="WL.addExpense('${t.id}')">${I.plus} ${T.addExpense}</button></div>`;
   else out += `<div class="actions" style="margin-top:16px"><button class="btn ghost block" onclick="WL.reopen('${t.id}')">${T.reopen}</button></div>`;
   out += `<h2 class="sec">${T.purchasesTitle}</h2>`;
   const ex = [...t.expenses].sort((a,b) => b.t - a.t);
-  out += ex.length ? `<div class="list">${ex.map(e => `<button class="item" onclick="WL.editExpense('${t.id}','${e.id}')"><span class="dot">${I.coin}</span><div class="t"><div>${esc(e.note || T.purchaseDefault)}</div><span>${when(e.t)}</span></div><div class="v">${eur(e.amount)}</div></button>`).join('')}</div>`
+  out += ex.length ? `<div class="list">${ex.map(e => `<button class="item" onclick="WL.editExpense('${t.id}','${e.id}')"><span class="dot">${I.coin}</span><div class="t"><div>${esc(e.note || T.purchaseDefault)}</div><span>${when(e.t)}</span></div><div class="v">${eur(hasBudget(t) ? e.amount : -e.amount)}</div></button>`).join('')}</div>`
     : `<div class="list"><div class="empty">${T.nothingYet}</div></div>`;
   return out;
 }
