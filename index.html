@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>What's Left?</title>
-<meta name="description" content="Make invisible spending visible.">
+<meta name="description" content="Become aware. Be in control.">
 <meta name="theme-color" content="#f3f0eb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -34,8 +34,10 @@ input{font:inherit;color:inherit}
 .app{max-width:520px;margin:0 auto;padding:calc(var(--st) + 8px) 20px calc(var(--sb) + 40px)}
 
 /* header */
-.top{display:flex;align-items:center;justify-content:space-between;height:52px;margin-bottom:6px}
+.top{display:flex;align-items:center;justify-content:space-between;height:58px;margin-bottom:6px}
 .brand{font-family:var(--body);letter-spacing:.28em;text-transform:uppercase;font-size:14px;font-weight:600;color:var(--ink)}
+.brandwrap{text-align:center;line-height:1.2}
+.tagline{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:4px;font-weight:600}
 .iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--ink)}
 .iconbtn:active{background:var(--sand)}
 .iconbtn svg{width:22px;height:22px}
@@ -103,6 +105,16 @@ h2.sec{font-weight:400;font-size:22px;margin:30px 0 14px;color:var(--brown-2)}
 .install .step{margin-top:12px;background:var(--surface);border-radius:12px;padding:12px 14px;line-height:1.9}
 .install .small{font-size:13px;color:var(--muted);margin-top:8px}
 .install .gi{width:20px;height:20px;vertical-align:-4px;color:#1a73e8;margin:0 2px}
+.sblock{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px 20px;margin-top:14px}
+.sblock .snum{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--brown);font-weight:700}
+.sblock .stitle{font-family:var(--head);font-weight:600;text-transform:uppercase;font-size:21px;line-height:1.15;margin:4px 0 6px}
+.sblock p{margin:0 0 12px;color:var(--brown-2)}
+.sblock p:last-child{margin-bottom:0}
+.sblock .step{background:var(--bg);border-radius:12px;padding:12px 14px;line-height:1.9;color:var(--ink)}
+.sblock .small{font-size:13px;color:var(--muted);margin-top:-4px}
+.sblock .gi{width:20px;height:20px;vertical-align:-4px;color:#1a73e8;margin:0 2px}
+.bline{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:var(--sand);border-radius:14px;padding:12px 16px;margin:6px 0 2px;color:var(--brown-2);font-size:15px}
+.bline svg{width:16px;height:16px;transform:rotate(180deg);flex:none}
 .stage{position:relative;display:flex;justify-content:center;padding:30px 0 30px;margin:18px 0 10px}
 .stage::before{content:'';position:absolute;left:0;right:34%;top:60px;bottom:0;background:var(--sand);border-radius:6px}
 .phone{position:relative;width:214px;height:438px;border-radius:40px;background:#221a13;padding:9px;transform:rotate(-4deg);
@@ -127,7 +139,7 @@ h2.sec{font-weight:400;font-size:22px;margin:30px 0 14px;color:var(--brown-2)}
 .psheet .pad svg{width:24px;height:24px}
 .pressed{transform:scale(.95)!important;filter:brightness(.88)}
 .steps{text-align:center;font-family:var(--head);text-transform:uppercase;font-weight:500;font-size:19px;line-height:1.35;letter-spacing:.02em;margin:0;color:var(--ink)}
-.inner .top{height:44px}
+.inner .top{height:50px}
 .inner .eyebrow{margin-top:14px}
 .inner .card{transition:none}
 .inner .amt span,.inner .amt{transition:color .3s}
@@ -319,6 +331,7 @@ function renderInner(){
   else if (view === 'new') app.innerHTML = viewForm(null);
   else if (view === 'edit' && byId(id)) app.innerHTML = viewForm(byId(id));
   else if (view === 'backup') app.innerHTML = viewBackup();
+  else if (view === 'setup') app.innerHTML = viewSetup();
   else app.innerHTML = viewHome();
   if (view === 'new' || view === 'edit') bindForm(view === 'edit' ? byId(id) : null);
   pvClear(); startPreview();
@@ -326,7 +339,7 @@ function renderInner(){
 }
 
 /* ---------- views ---------- */
-function top(left, right){ return `<div class="top">${left || '<span class="spacer"></span>'}<div class="brand">What's Left?</div>${right || '<span class="spacer"></span>'}</div>`; }
+function top(left, right){ return `<div class="top">${left || '<span class="spacer"></span>'}<div class="brandwrap"><div class="brand">What's Left?</div><div class="tagline">Become aware. Be in control.</div></div>${right || '<span class="spacer"></span>'}</div>`; }
 const backBtn = (to='') => `<button class="iconbtn" aria-label="Back" onclick="location.hash='${to}'">${I.back}</button>`;
 
 function cardFor(t){
@@ -373,9 +386,17 @@ function installCard(){
   let body;
   if (inApp) body = `<p class="why1">You're viewing this inside ${inApp}, which can't add apps to your home screen.</p>
       <p class="step">Tap <b>⋯</b> and choose <b>Open in ${isIOS ? 'Safari' : 'browser'}</b>, then add it from there.</p>`;
-  else if (isIOS) body = `<p class="why1">Works offline, opens full-screen, and keeps your data safer.</p>
-      <p class="step">Tap <b>Share</b> ${shareI} then <b>Add to Home Screen</b> ${addI}</p>
+  else if (isIOS) {
+    const has = S.trackings.length > 0;
+    body = has
+      ? `<p class="why1">On iPhone, the home-screen app has its own storage. What you've tracked here in Safari won't appear there automatically.</p>
+      <p class="step"><b>1.</b> Save a backup of what you have.<br><b>2.</b> Tap <b>Share</b> ${shareI} then <b>Add to Home Screen</b> ${addI}<br><b>3.</b> In the app, open <b>Settings</b> and tap <b>restore from backup</b>.</p>
+      <button class="btn block" style="margin-top:12px" onclick="WL.exportData()">save a backup</button>
+      <p class="small">Can't see Share? It's in Safari's <b>⋯</b> menu.</p>`
+      : `<p class="why1">Do this first. On iPhone, anything you track in Safari stays in Safari and won't move to the home-screen app.</p>
+      <p class="step">Tap <b>Share</b> ${shareI} then <b>Add to Home Screen</b> ${addI}<br>Then open What's Left from your home screen.</p>
       <p class="small">Can't see Share? It's in Safari's <b>⋯</b> menu.</p>`;
+  }
   else if (installEvt) body = `<p class="why1">Works offline, opens full-screen, and keeps your data safer.</p>
       <button class="btn block" style="margin-top:12px" onclick="WL.install()">add to home screen</button>`;
   else body = `<p class="why1">Works offline, opens full-screen, and keeps your data safer.</p>
@@ -438,6 +459,39 @@ function startPreview(){
   run();
 }
 
+/* ---------- setup page (step 1 / step 2) ---------- */
+const BKEY = 'whatsleft.browserOk';
+const mobileBrowser = () => !installed() && (isIOS || isAndroid);
+function browserOk(){ try { return localStorage.getItem(BKEY) === '1'; } catch(e){ return false; } }
+const browserName = () => inApp ? inApp : isIOS ? 'Safari' : 'the browser';
+function browserLine(){
+  if (!mobileBrowser()) return '';
+  return `<button class="bline" onclick="location.hash='setup'"><span>You're using ${isIOS && !inApp ? 'Safari' : 'the browser'}. <b>Move to the app</b></span>${I.back}</button>`;
+}
+function viewSetup(){
+  const shareI = '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
+  const addI = '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>';
+  const has = S.trackings.length > 0;
+  let how;
+  if (inApp) how = `<p class="step">You're inside ${inApp}, which can't add apps. Tap <b>⋯</b> and choose <b>Open in ${isIOS ? 'Safari' : 'browser'}</b>, then come back to this step.</p>`;
+  else if (isIOS) how = `<p class="step">Tap <b>Share</b> ${shareI} then <b>Add to Home Screen</b> ${addI}</p><p class="small">Can't see Share? It's in Safari's <b>⋯</b> menu.</p>`;
+  else if (installEvt) how = `<button class="btn block" onclick="WL.install()">add to home screen</button>`;
+  else how = `<p class="step">Open the browser menu <b>⋮</b> and tap <b>Add to Home screen</b> or <b>Install app</b>.</p>`;
+  let out = top(backBtn(''), '');
+  const mv = has && isIOS, n = k => mv ? k + 1 : k;
+  out += mv ? `<div class="eyebrow" style="margin-top:14px">keep what you've tracked</div><div class="hero-line">Move to the app.</div>`
+            : `<div class="eyebrow" style="margin-top:14px">before you start</div><div class="hero-line">Two quick steps.</div>`;
+  if (mv) out += `<div class="sblock"><div class="snum">step 1</div><div class="stitle">Save what you have.</div>
+      <p>On iPhone, the home-screen app has its own storage, so what you've tracked here won't move over by itself. Save a backup first, then restore it in the app from <b>Settings</b>.</p>
+      <button class="btn ghost block" onclick="WL.exportData()">save a backup</button></div>`;
+  out += `<div class="sblock"><div class="snum">step ${n(1)}</div><div class="stitle">Add to your home screen.</div>
+      <p>What's Left works best as an app: it opens full-screen, works offline, and keeps your spending safe with it.${isIOS ? ' On iPhone, anything you track in Safari stays in Safari.' : ''}</p>${how}</div>`;
+  out += `<div class="sblock"><div class="snum">step ${n(2)}</div><div class="stitle">${mv ? 'Open the app and restore.' : 'Open the app and start tracking.'}</div>
+      <p>${mv ? 'Open <b>What\'s Left</b> from your home screen, go to <b>Settings</b> and tap <b>restore from backup</b>. Everything will be there.' : 'Find <b>What\'s Left</b> on your home screen and tap <b>start tracking</b>.'}</p></div>`;
+  out += `<p style="text-align:center;margin-top:26px"><button class="link" onclick="WL.useBrowser()">${has ? 'keep tracking' : 'or track'} in ${browserName() === 'the browser' ? 'the browser' : browserName()} instead</button></p>`;
+  return out;
+}
+
 /* ---------- backup reminder ---------- */
 const backupTip = () => isIOS ? 'Tip: choose <b>Save to Files</b> → <b>iCloud Drive</b>, so it isn’t only on this phone.'
   : 'Tip: save it to Google Drive or email it to yourself, so it isn’t only on this phone.';
@@ -463,24 +517,23 @@ function viewHome(){
   const menu = `<button class="iconbtn" aria-label="Settings" onclick="location.hash='backup'">${I.menu}</button>`;
   let out = top('', menu);
   if (!a.length && !h.length) {
-    out += `<div class="eyebrow">make invisible spending visible</div>
-      <div class="hero-line">Spend it.<br>See it.</div>
-      <p class="sub">The easier it is to spend, the harder it is to spend mindfully.</p>
-      <div class="actions" style="margin-top:22px"><button class="btn block" onclick="location.hash='new'">start tracking</button></div>
+    out = top('', menu).replace('<div class="tagline">Become aware. Be in control.</div>', '');
+    out += `<div class="hero-line" style="margin-top:26px">Become aware.<br>Be in control.</div>
+      <p class="sub">A simple spending tracker.</p>
+      <div class="actions" style="margin-top:22px"><button class="btn block" onclick="WL.start()">start tracking</button></div>
       ${previewHTML()}
       <div class="eyebrow" style="text-align:center;margin:6px 0 8px">add a purchase in seconds</div>
       <p class="steps">Set an amount.<br>Tap in what you spend.<br>Know what's left.</p>
-      ${installCard() ? `<div style="margin-top:22px">${installCard()}</div>` : ''}
       <h2 class="sec" style="margin-top:40px">why what's left?</h2>
       <div class="why">${WHY.map((w, i) => `<div class="w"><span class="no">0${i+1}</span><div><b>${w[0]}</b><p>${w[1]}</p></div></div>`).join('')}</div>
-      <div class="actions" style="margin-top:28px"><button class="btn block" onclick="location.hash='new'">start tracking</button></div>
+      <div class="actions" style="margin-top:28px"><button class="btn block" onclick="WL.start()">start tracking</button></div>
       <div class="dash">_ _ _ _ _ _ _ _ _ _</div>`;
     return out + foot();
   }
-  out += installCard() || backupCard();
+  out += browserLine() || backupCard();
   out += `<div class="eyebrow">active</div>`;
   out += a.length ? a.map(cardFor).join('') : `<div class="list"><div class="empty">Nothing running right now.</div></div>`;
-  out += `<div class="actions" style="margin-top:14px"><button class="btn block" onclick="location.hash='new'">${I.plus} new tracking</button></div>`;
+  out += `<div class="actions" style="margin-top:14px"><button class="btn block" onclick="WL.start()">${I.plus} new tracking</button></div>`;
   out += `<h2 class="sec">history</h2>`;
   out += h.length ? `<div class="list">${h.map(histItem).join('')}</div>` : `<div class="list"><div class="empty">Finished trackings are saved here.</div></div>`;
   return out + foot();
@@ -632,6 +685,8 @@ function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add
 
 window.WL = {
   close: () => closeSheet(),
+  start(){ location.hash = (mobileBrowser() && !browserOk()) ? 'setup' : 'new'; },
+  useBrowser(){ try { localStorage.setItem(BKEY, '1'); } catch(e){} location.hash = S.trackings.length ? '' : 'new'; },
   markBackup(){ S.lastBackup = Date.now(); delete S.backupSnooze; save(); render(); toast('Backup saved'); },
   snoozeBackup(){ S.backupSnooze = Date.now(); save(); render(); },
   hideInstall(){ hideMem = Date.now(); try { localStorage.setItem(HIDE_KEY, String(hideMem)); } catch(e){} render(); },
