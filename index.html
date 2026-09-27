@@ -122,7 +122,11 @@ h2.sec{font-weight:400;font-size:22px;margin:30px 0 14px;color:var(--brown-2)}
 .mani{margin-top:22px;font-size:18px;line-height:1.6;color:var(--ink)}
 .mani p{margin:0}
 .mdash{color:var(--muted);margin:18px 0;font-size:18px}
-.stage{position:relative;display:flex;justify-content:center;padding:30px 0 30px;margin:18px 0 10px}
+.stage{position:relative;display:flex;justify-content:center;padding:30px 0 30px;margin:18px 0 0}
+.pvcap{text-align:center;margin:4px 0 18px;color:var(--muted);min-height:1.5em;transition:opacity .3s}
+.pvcap b{color:var(--ink)}
+.pvcap.fade,#pv.fade{opacity:0}
+#pv{transition:opacity .3s}
 .stage::before{content:'';position:absolute;left:0;right:34%;top:60px;bottom:0;background:var(--sand);border-radius:6px}
 .phone{position:relative;width:214px;height:438px;border-radius:40px;background:#221a13;padding:9px;transform:rotate(-4deg);
   box-shadow:0 40px 60px -28px rgba(58,38,22,.55),0 14px 24px -12px rgba(58,38,22,.35),inset 0 0 0 1.5px #4a3a2d,inset 0 0 0 4px #17110c}
@@ -301,15 +305,15 @@ en: {
   daysLeft:n => `${n} day${n>1?'s':''} left`, perDay:x => `${x} per day`, ofSpent:(a,b) => `${a} of ${b} spent`,
   purchases:n => `${n} purchase${n===1?'':'s'}`, daysRemaining:n => `day${n>1?'s':''} remaining`, perDayL:'per day',
   under:x => `${x} under`, overBy:x => `${x} over`,
-  histEyebrow:'history', addExpense:'add expense', reopen:'reopen', purchasesTitle:'purchases', purchaseDefault:'Purchase', nothingYet:'Nothing added yet.',
+  histEyebrow:'history', addExpense:'add purchase', reopen:'reopen', purchasesTitle:'purchases', purchaseDefault:'Purchase', nothingYet:'Nothing added yet.',
   today:'Today', yesterday:'Yesterday', whenFmt:(d,t) => `${d}, ${t}`,
-  editT:'Edit.', newT:'New tracking.', nameL:'name', namePh:'e.g. Weekly budget, Christmas shopping',
+  editT:'Edit.', newT:'New tracking.', nameL:'name', namePh:'e.g. Food shopping, Christmas presents',
   howTrack:'how do you want to track?', withAmount:'With an amount', withAmountN:"shows what's left", atZero:'At zero', atZeroN:"shows what's spent",
   howMuch:'how much do you have to spend?', change:'change', periodL:'period', save:'save', add:'add', del:'delete',
   hintOneoff:'Runs until you end it. Good for a trip, a shopping day or Christmas.',
   hintRecur:(start, p) => `Starts ${start}. When the ${ {weekly:'week', fortnightly:'fortnight', monthly:'month'}[p] } ends, it's saved to history and a fresh one begins.`,
   todayLower:'today', needAmount:'Add an amount, or choose “At zero”.',
-  currency:'Currency', addExpenseT:'Add expense', editExpenseT:'Edit expense', notePh:'Optional note',
+  currency:'Currency', addExpenseT:'Add purchase', editExpenseT:'Edit purchase', notePh:'Optional note',
   added:x => `${x} added`, deleted:'Deleted', savedHist:'Saved to history', reopened:'Reopened', backupSaved:'Backup saved', restored:'Restored',
   notBackup:"That file isn't a What's Left? backup.", installedToast:'Added to your home screen', saveFail:'Could not save on this device.',
   curToast:name => `New trackings will use ${name.toLowerCase()}`,
@@ -338,7 +342,7 @@ en: {
   openRestoreT:'Open the app and restore.', openRestoreP:"Open <b>What's Left</b> from your home screen, go to <b>Settings</b> and tap <b>restore from backup</b>. Everything will be there.",
   useBrowser:(has, safari) => `${has ? 'keep tracking' : 'or track'} in ${safari ? 'Safari' : 'the browser'} instead`,
   errT:'Something went wrong.', errP:'Your data is safe on this phone. Please try again, and save a backup to be sure.', tryAgain:'try again',
-  pv:{name:'Weekly budget', notes:['Groceries','Lunch','Coffee']},
+  pv:{name:'Food shopping', notes:['Lidl','Market hall','Bakery']}, pv2:{name:'Car repairs', notes:['Brake pads','Headlight bulb']},
   aria:{back:'Back', settings:'Settings', options:'Options', close:'Close', changeCur:'Change currency', later:'Remind me later'},
   cur:{EUR:'Euro', GBP:'Pound sterling', USD:'US dollar', AUD:'Australian dollar', SEK:'Swedish krona', NOK:'Norwegian krone', DKK:'Danish krone'}
 },
@@ -388,7 +392,7 @@ fi: {
   under:x => `${x} säästyi`, overBy:x => `${x} ylitys`,
   histEyebrow:'historia', addExpense:'lisää ostos', reopen:'avaa uudelleen', purchasesTitle:'ostokset', purchaseDefault:'Ostos', nothingYet:'Ei vielä ostoksia.',
   today:'Tänään', yesterday:'Eilen', whenFmt:(d,t) => `${d} klo ${t}`,
-  editT:'Muokkaa.', newT:'Uusi seuranta.', nameL:'nimi', namePh:'esim. Viikkobudjetti, Joulushoppailu',
+  editT:'Muokkaa.', newT:'Uusi seuranta.', nameL:'nimi', namePh:'esim. Ruokaostokset, Joulushoppailu',
   howTrack:'miten haluat seurata?', withAmount:'Summalla', withAmountN:'näyttää, paljonko on jäljellä', atZero:'Nollasta', atZeroN:'näyttää, paljonko on käytetty',
   howMuch:'paljonko sinulla on käytettävissä?', change:'vaihda', periodL:'jakso', save:'tallenna', add:'lisää', del:'poista',
   hintOneoff:'Jatkuu, kunnes lopetat sen. Sopii matkalle, ostospäivälle tai jouluun.',
@@ -423,7 +427,7 @@ fi: {
   openRestoreT:'Avaa sovellus ja palauta.', openRestoreP:"Avaa <b>What's Left</b> aloitusnäytöltä, mene <b>Asetuksiin</b> ja napauta <b>palauta varmuuskopiosta</b>. Kaikki on tallessa.",
   useBrowser:(has, safari) => `${has ? 'jatka' : 'tai seuraa'} ${safari ? 'Safarissa' : 'selaimessa'}`,
   errT:'Jokin meni vikaan.', errP:'Tietosi ovat tallessa tässä puhelimessa. Yritä uudelleen ja tallenna varmuuden vuoksi varmuuskopio.', tryAgain:'yritä uudelleen',
-  pv:{name:'Viikkobudjetti', notes:['Ruokaostokset','Lounas','Kahvi']},
+  pv:{name:'Ruokaostokset', notes:['Lidl','Kauppahalli','Leipomo']}, pv2:{name:'Auton korjaukset', notes:['Jarrupalat','Polttimo']},
   aria:{back:'Takaisin', settings:'Asetukset', options:'Valinnat', close:'Sulje', changeCur:'Vaihda valuutta', later:'Muistuta myöhemmin'},
   cur:{EUR:'Euro', GBP:'Englannin punta', USD:'Yhdysvaltain dollari', AUD:'Australian dollari', SEK:'Ruotsin kruunu', NOK:'Norjan kruunu', DKK:'Tanskan kruunu'}
 }};
@@ -565,19 +569,29 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); instal
 window.addEventListener('appinstalled', () => { installEvt = null; render(); });
 
 /* ---------- landing preview ---------- */
-let pvTimers = [];
+let pvTimers = [], pvScene = 0;
 const pvClear = () => { pvTimers.forEach(clearTimeout); pvTimers = []; };
-function pvTracking(added){
-  const d0 = startOfDay(Date.now()), now = Date.now(), n = T.pv.notes;
-  const ex = [{id:'g', amount:4230, note:n[0], t:now - 26*36e5}, {id:'l', amount:1280, note:n[1], t:now - 3*36e5}];
-  if (added) ex.push({id:'c', amount:450, note:n[2], t:now});
-  return { id:'pv', name:T.pv.name, mode:'budget', amount:25000, period:'weekly', cur:S.cur || 'EUR',
+// scene 0: groceries (with an amount) · scene 1: car repairs (at zero)
+const PV_ADD = [450, 2490];
+function pvTracking(added, sc){
+  const d0 = startOfDay(Date.now()), now = Date.now(), y = d0 - DAY;
+  if (sc === 1) {
+    const n = T.pv2.notes;
+    const ex = [{id:'b', amount:8900, note:n[0], t:y + 16.2*36e5}];
+    if (added) ex.push({id:'h', amount:PV_ADD[1], note:n[1], t:now});
+    return { id:'pv', name:T.pv2.name, mode:'zero', amount:0, period:'oneoff', cur:S.cur || 'EUR', start:d0 - 3*DAY, end:null, status:'active', expenses:ex };
+  }
+  const n = T.pv.notes;
+  const ex = [{id:'g', amount:4230, note:n[0], t:y + 17.75*36e5}, {id:'l', amount:1280, note:n[1], t:y + 11.5*36e5}];
+  if (added) ex.push({id:'c', amount:PV_ADD[0], note:n[2], t:now});
+  return { id:'pv', name:T.pv.name, mode:'budget', amount:15000, period:'weekly', cur:S.cur || 'EUR',
     start:d0 - 2*DAY, end:d0 + 5*DAY, status:'active', expenses:ex };
 }
-function pvScreen(added){
-  const t = pvTracking(added), f = fmtFor(t);
-  return viewTracking(t) + (added ? `<div class="ptoast">${T.added(f(450))}</div>` : '');
+function pvScreen(added, sc = pvScene){
+  const t = pvTracking(added, sc), f = fmtFor(t);
+  return viewTracking(t) + (added ? `<div class="ptoast">${T.added(f(PV_ADD[sc]))}</div>` : '');
 }
+const pvCapHTML = sc => sc === 1 ? `<b>${T.atZero}</b> — ${T.atZeroN}` : `<b>${T.withAmount}</b> — ${T.withAmountN}`;
 function pvSheet(){
   const C = curOf({cur:S.cur}), keys = ['1','2','3','4','5','6','7','8','9',C.dec,'0','⌫'];
   return `<div class="pscrim"></div><div class="psheet"><div class="grab"></div>
@@ -588,33 +602,41 @@ function pvSheet(){
     <span class="btn block" id="pvAdd">${T.add}</span></div>`;
 }
 function previewHTML(){
+  pvScene = 0;
   return `<div class="stage" aria-hidden="true"><div class="phone"><i class="b1"></i><i class="b2"></i><i class="b3"></i>
     <div class="screen"><div class="island"></div>
       <div class="status"><span>9:41</span><span class="sig"><svg viewBox="0 0 18 10"><rect x="0" y="6" width="3" height="4" rx=".6"/><rect x="5" y="4" width="3" height="6" rx=".6"/><rect x="10" y="2" width="3" height="8" rx=".6"/><rect x="15" y="0" width="3" height="10" rx=".6"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.6"/><rect x="23.5" y="4" width="1.8" height="4" rx=".8" opacity=".45"/></svg></span></div>
-      <div class="inner"><div id="pv">${pvScreen(0)}</div><div id="pvS"></div></div></div></div></div>`;
+      <div class="inner"><div id="pv">${pvScreen(0, 0)}</div><div id="pvS"></div></div></div></div></div>
+    <p class="pvcap" id="pvCap">${pvCapHTML(0)}</p>`;
 }
 function startPreview(){
-  pvClear(); const el = $('#pv'), sh = $('#pvS'); if (!el) return;
+  pvClear(); const el = $('#pv'), sh = $('#pvS'), cap = $('#pvCap'); if (!el) return;
   let reduce = false; try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
-  if (reduce) { el.innerHTML = pvScreen(1); return; }
+  if (reduce) { el.innerHTML = pvScreen(1, 0); return; }
   const C = curOf({cur:S.cur});
   const at = (ms, fn) => pvTimers.push(setTimeout(() => { if (document.body.contains(el)) fn(); }, ms));
   const press = sel => { const n = sh.querySelector(sel) || el.querySelector(sel); if (n) { n.classList.add('pressed'); setTimeout(() => n.classList.remove('pressed'), 220); } };
   const typed = v => { const d = $('#pvD'); if (!d) return; d.classList.remove('placeholder'); d.textContent = C.after ? v + ' ' + C.sym : C.sym + v; };
+  let first = true;
   const run = () => {
-    el.innerHTML = pvScreen(0); sh.innerHTML = '';
-    at(1100, () => press('.actions .btn'));
-    at(1400, () => { sh.innerHTML = pvSheet(); requestAnimationFrame(() => requestAnimationFrame(() => sh.classList.add('open'))); });
-    at(2100, () => { press('.k[data-k="4"]'); typed('4'); });
-    at(2500, () => { press('.k[data-k="' + C.dec + '"]'); typed('4' + C.dec); });
-    at(2900, () => { press('.k[data-k="5"]'); typed('4' + C.dec + '5'); });
-    at(3300, () => { press('.k[data-k="0"]'); typed('4' + C.dec + '50'); });
-    at(3700, () => { const n = $('#pvN'); if (n) { n.textContent = T.pv.notes[2]; n.classList.add('filled'); } });
-    at(4300, () => press('#pvAdd'));
-    at(4550, () => { sh.classList.remove('open'); });
-    at(4800, () => { el.innerHTML = pvScreen(1); });
-    at(5100, () => { sh.innerHTML = ''; });
-    at(8200, run);
+    const sc = pvScene;
+    const keys = inputStr(PV_ADD[sc], C).split('');           // e.g. "4,50" / "24,90"
+    const note = sc === 1 ? T.pv2.notes[1] : T.pv.notes[2];
+    const show = () => { el.innerHTML = pvScreen(0, sc); sh.innerHTML = ''; if (cap) cap.innerHTML = pvCapHTML(sc); };
+    if (first) { show(); first = false; }
+    else { el.classList.add('fade'); if (cap) cap.classList.add('fade');
+      at(350, () => { show(); el.classList.remove('fade'); if (cap) cap.classList.remove('fade'); }); }
+    const t0 = first ? 0 : 400;
+    at(t0 + 1100, () => press('.actions .btn'));
+    at(t0 + 1400, () => { sh.innerHTML = pvSheet(); requestAnimationFrame(() => requestAnimationFrame(() => sh.classList.add('open'))); });
+    let t = t0 + 2100, sofar = '';
+    keys.forEach(k => { const kk = k; at(t, () => { press('.k[data-k="' + kk + '"]'); sofar += kk; typed(sofar); }); t += 380; });
+    at(t + 100, () => { const n = $('#pvN'); if (n) { n.textContent = note; n.classList.add('filled'); } });
+    at(t + 700, () => press('#pvAdd'));
+    at(t + 950, () => { sh.classList.remove('open'); });
+    at(t + 1200, () => { el.innerHTML = pvScreen(1, sc); });
+    at(t + 1500, () => { sh.innerHTML = ''; });
+    at(t + 4300, () => { pvScene = 1 - sc; run(); });
   };
   run();
 }
